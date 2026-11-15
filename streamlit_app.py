@@ -106,7 +106,7 @@ st.title("🌥️ Dunkelflaute Explorer")
 st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* little sun — getting more frequent or longer over {config.REGION_NAME}, and why?**  \n"
             "Built on NASA POWER data (MERRA-2 wind, CERES/SRB sunlight), 1984–2025.")
 
-tab_dash, tab_walk, tab_defs, tab_method = st.tabs(["📊 Dashboard", "🕵️ Detective walkthrough", "📖 Definitions", "🔬 Method & data"])
+tab_dash, tab_defs, tab_method = st.tabs(["📊 Dashboard", "📖 Definitions", "🔬 Method & data"])
 
 with tab_dash:
     # ---------------- verdict cards
@@ -245,22 +245,6 @@ with tab_dash:
         f"For {METRIC_LABELS[metric].lower()}, the recent period averages {pc['recent_mean']:.2f} versus {pc['baseline_mean']:.2f} in {base[0]}–{base[1]}. "
         f"{up} of {len(cells)} grid cells show a significant rise and {down} a significant fall."
     )
-
-with tab_walk:
-    st.header("Become a trend detective in five steps")
-    st.markdown("Follow along with the default settings (press **Reset to default settings** in the sidebar first).")
-    st.markdown("""
-1. **Ask the question.** Dunkelflaute is German for 'dark doldrums': days when wind turbines *and* solar panels produce very little.
-   We ask: *are these spells becoming more common or longer?*
-2. **Build the time series.** For every day since 1984 we turn NASA weather data into the power a fixed, unchanging set of turbines and
-   panels would produce. Days in the lowest 10% count as 'low'; two or more low days in a row make an event. Look at the bars on the Dashboard.
-3. **Test the trend.** A line through noisy data can slope by chance. The **Mann-Kendall test** asks whether the ups outnumber the downs
-   more than chance allows. If *p* is below 0.05, we call the trend **significant**. Check the verdict cards.
-4. **Find where.** The map runs the same test in every grid cell. Some regions can rise while others fall — that is exactly what the challenge asks us to look for.
-5. **Ask why.** Switch **Wind speed** off in the sidebar. The orange line shows what would have happened if wind had no long-term trend.
-   The gap between the lines is wind's share. Then try **Solar irradiance**.
-""")
-    st.success("Detective tip: try a different threshold or turbine. A real trend should survive small changes to the definition.")
 
 with tab_defs:
     st.header("Plain-language definitions")
