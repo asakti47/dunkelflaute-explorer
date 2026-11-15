@@ -209,10 +209,23 @@ Every element on the Dashboard tab, top to bottom. "Measure" means the measure c
 
 | Card | Value shown | Calculation | Subtext | Default result |
 | --- | --- | --- | --- | --- |
-| **Frequency (events per season)** | Change in event count per decade | Sen's slope of event count × 10. Always uses event count, whatever the measure | "significant" or "not significant" and the Mann-Kendall p-value | +0.00 per decade, p = 0.927 (full year: +0.00, p = 0.624) |
-| **Typical event length (days)** | Change in mean event length per decade | Sen's slope of mean event length × 10. Always uses mean length | As above | −0.05 days per decade, p = 0.451 (full year: −0.03, p = 0.594) |
-| **Where: significant cells** | "*n* ↑ · *m* ↓" | Number of the 80 grid points whose own trend in the measure is significant after false discovery rate correction: ↑ rising, ↓ falling | "of 80 grid cells (after FDR)" | 0 ↑ · 1 ↓ (full year: 0 ↑ · 2 ↓) |
+| **Dunkelflaute frequency** · events per *season* | Change in event count, events per decade | Sen's slope of event count × 10. Always uses event count, whatever the measure | Significance tag and the Mann-Kendall p-value | +0.00 events per decade, p = 0.927 (full year: +0.00, p = 0.624) |
+| **Dunkelflaute event length** · average days per event, each *season* | Change in mean event length, days per decade | Sen's slope of mean event length × 10. Always uses mean length | As above | −0.05 days per decade, p = 0.451 (full year: −0.03, p = 0.594) |
+| **Locations with a significant trend** | "*n* rising · *m* falling" | Number of the 80 grid location cells (1° squares) whose own trend in the measure is significant after false discovery rate (FDR) correction | "of 80 grid location cells (after FDR)" | 0 rising · 1 falling (full year: 0 rising · 2 falling) |
 | **Driver effects** | Each significant direct-driver effect, e.g. "Wind +1.1 · Sun −0.9"; "None" if neither is significant | Effect from step 9, in the measure's units per decade; shown only if significant after Holm correction | The measure, per decade | None (full year: Wind +1.1 · Sun −0.9) |
+
+**Season tag.** The purple tag (❄️ winter or 📅 year) in the first two card labels shows the current **Season** setting. The same tag appears under the Season control in the sidebar, and all copies change together.
+
+**Colours.**
+
+| Colour | Where | Meaning |
+| --- | --- | --- |
+| Grey tag | Cards 1–2 | Not significant |
+| Red | Cards 1–2 tag; card 3 "rising" | Significant and rising: more or longer Dunkelflaute |
+| Blue | Cards 1–2 tag; card 3 "falling" | Significant and falling |
+| Faded grey | Card 3 | A count of zero |
+
+**Hover on card 3.** Hovering over the card lists each significant location: the nearest reference city ("near *city*" within 40 km, otherwise the distance to it), the cell's centre coordinates, and its change per decade in the chosen measure. At default settings: winter, 50 km from Hanover (52.5°N, 9.0°E), −0.40 days per decade; full year, near Saarbrücken (49.5°N, 7.0°E), −2.22, and near Aachen (50.5°N, 6.0°E), −2.11. A footnote explains FDR: a correction for testing 80 locations at once.
 
 ### Time series
 
