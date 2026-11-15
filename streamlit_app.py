@@ -73,6 +73,87 @@ def fmt_p(p: float) -> str:
     return "p < 0.001" if p < 0.001 else f"p = {p:.3f}"
 
 
+METRIC_UNITS = {"count": "events", "mean_len": "days", "max_len": "days", "total_days": "days", "severity": "CF-days"}
+RISE, FALL = "#c0392b", "#2a6fdb"
+CITIES = [  # reference places for describing grid locations
+    ("Kiel", 54.32, 10.14), ("Flensburg", 54.79, 9.44), ("Rostock", 54.09, 12.10), ("Hamburg", 53.55, 10.00),
+    ("Bremen", 53.08, 8.80), ("Groningen", 53.22, 6.57), ("Szczecin", 53.43, 14.55), ("Schwerin", 53.63, 11.41),
+    ("Hanover", 52.37, 9.73), ("Berlin", 52.52, 13.40), ("Magdeburg", 52.13, 11.63), ("Münster", 51.96, 7.63),
+    ("Osnabrück", 52.28, 8.05), ("Dortmund", 51.51, 7.47), ("Düsseldorf", 51.23, 6.78), ("Kassel", 51.31, 9.48),
+    ("Leipzig", 51.34, 12.37), ("Dresden", 51.05, 13.74), ("Erfurt", 50.98, 11.03), ("Cottbus", 51.76, 14.33),
+    ("Cologne", 50.94, 6.96), ("Aachen", 50.78, 6.08), ("Koblenz", 50.36, 7.59), ("Frankfurt", 50.11, 8.68),
+    ("Würzburg", 49.79, 9.95), ("Chemnitz", 50.83, 12.92), ("Prague", 50.08, 14.44), ("Liège", 50.63, 5.57),
+    ("Luxembourg", 49.61, 6.13), ("Saarbrücken", 49.24, 6.99), ("Mannheim", 49.49, 8.47), ("Nuremberg", 49.45, 11.08),
+    ("Regensburg", 49.01, 12.10), ("Plzeň", 49.74, 13.38), ("Strasbourg", 48.57, 7.75), ("Stuttgart", 48.78, 9.18),
+    ("Augsburg", 48.37, 10.90), ("Munich", 48.14, 11.58), ("Passau", 48.57, 13.43), ("Linz", 48.31, 14.29),
+    ("Freiburg", 47.99, 7.85), ("Basel", 47.56, 7.59), ("Zurich", 47.38, 8.54), ("Kempten", 47.73, 10.31),
+    ("Innsbruck", 47.27, 11.40), ("Salzburg", 47.81, 13.06),
+]
+
+
+def place_name(lat: float, lon: float) -> str:
+    """'near Hanover' when within 40 km of a reference place, else '75 km from Bremen'."""
+    best = None
+    for name, la, lo in CITIES:
+        dy = (lat - la) * 111.0
+        dx = (lon - lo) * 111.0 * np.cos(np.radians((lat + la) / 2))
+        km = float(np.hypot(dx, dy))
+        if best is None or km < best[1]:
+            best = (name, km)
+    return f"near {best[0]}" if best[1] <= 40 else f"{round(best[1], -1):.0f} km from {best[0]}"
+
+
+def season_tag(season: str) -> str:
+    text = "❄️ winter" if season == "winter" else "📅 year"
+    return f'<span class="dfx-season">{text}</span>'
+
+
+def sig_tag(t: dict) -> str:
+    if not t["significant"]:
+        return '<span class="dfx-tag dfx-ns">not significant</span>'
+    cls = "dfx-up" if t["slope_decade"] > 0 or t.get("direction") == "rising" else "dfx-down"
+    return f'<span class="dfx-tag {cls}">significant</span>'
+
+
+def card(label: str, value: str, sub: str, hover: str | None = None, small: bool = False) -> str:
+    tip = f'<div class="dfx-tip">{hover}</div>' if hover else ""
+    cls = "dfx-card dfx-hover" if hover else "dfx-card"
+    vcls = "dfx-value dfx-sm" if small else "dfx-value"
+    return (f'<div class="{cls}"><div class="dfx-label">{label}</div>'
+            f'<div class="{vcls}">{value}</div><div class="dfx-sub">{sub}</div>{tip}</div>')
+
+
+CARD_CSS = f"""
+<style>
+.dfx-card {{position: relative; padding: 0.2rem 0 0.6rem 0;}}
+.dfx-hover {{cursor: help;}}
+.dfx-label {{font-size: 0.875rem; line-height: 1.35; opacity: 0.85; margin-bottom: 0.15rem;}}
+.dfx-label b {{opacity: 1;}}
+.dfx-value {{font-size: clamp(1.45rem, 2.3vw, 2.1rem); line-height: 1.2; font-weight: 400; margin: 0.1rem 0 0.35rem 0;}}
+.dfx-value.dfx-sm {{font-size: clamp(1.2rem, 1.75vw, 1.6rem); padding-top: 0.25rem;}}
+.dfx-unit {{font-size: 0.95rem; opacity: 0.75; white-space: nowrap;}}
+.dfx-nw {{white-space: nowrap;}}
+.dfx-zero {{opacity: 0.55; font-weight: 600;}}
+.dfx-sub {{font-size: 0.82rem; line-height: 1.5; opacity: 0.9;}}
+.dfx-tag {{display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; font-weight: 600; font-size: 0.78rem;}}
+.dfx-ns {{background: rgba(138,138,138,0.18); color: inherit;}}
+.dfx-up {{background: {RISE}; color: #fff;}}
+.dfx-down {{background: {FALL}; color: #fff;}}
+.dfx-season {{display: inline-block; padding: 0 0.5rem; border-radius: 999px; font-weight: 600;
+  background: rgba(124,77,255,0.13); color: #6a3fe0; border: 1px solid rgba(124,77,255,0.45); white-space: nowrap;}}
+.dfx-rise {{color: {RISE}; font-weight: 600;}}
+.dfx-fall {{color: {FALL}; font-weight: 600;}}
+.dfx-tip {{display: none; position: absolute; top: 100%; left: 0; z-index: 1000; width: max-content; max-width: 360px;
+  background: #ffffff; color: #262730; border: 1px solid rgba(49,51,63,0.2); border-radius: 0.5rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15); padding: 0.7rem 0.85rem; font-size: 0.82rem; line-height: 1.45;}}
+.dfx-hover:hover .dfx-tip {{display: block;}}
+.dfx-tip ul {{margin: 0.35rem 0 0.4rem 1.1rem; padding: 0;}}
+.dfx-tip li {{margin: 0.1rem 0;}}
+.dfx-tip .dfx-foot {{opacity: 0.7; font-size: 0.76rem; margin-top: 0.3rem;}}
+</style>
+"""
+
+
 # ------------------------------------------------------------------ sidebar controls
 st.sidebar.title("Controls")
 if st.sidebar.button("Reset to default settings"):
@@ -80,6 +161,8 @@ if st.sidebar.button("Reset to default settings"):
         del st.session_state[k]
 season = st.sidebar.radio("Season", ["winter", "year"], format_func=lambda s: "Winter (Nov–Feb)" if s == "winter" else "Full year",
                           key="season", help="Dunkelflaute is mostly a winter problem: short days, low sun, calm high-pressure spells.")
+st.sidebar.markdown(CARD_CSS + f'<div style="font-size:0.85rem;margin:-0.4rem 0 0.4rem 0">Shown on the cards as {season_tag(season)}</div>',
+                    unsafe_allow_html=True)
 st.sidebar.caption(f"Period: 1984–2025 · Baseline: {config.BASELINE[0]}–{config.BASELINE[1]}")
 metric = st.sidebar.selectbox("Measure", list(METRIC_LABELS), index=3, format_func=METRIC_LABELS.get, key="metric")
 thr = st.sidebar.slider("Low-output threshold (percentile of baseline days)", 5, 25, 10, 5, key="thr",
@@ -111,27 +194,45 @@ tab_dash, tab_defs, tab_method = st.tabs(["📊 Dashboard", "📖 Definitions", 
 with tab_dash:
     # ---------------- verdict cards
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Frequency (events per season)", f"{fmt_s(t_count['slope_decade'])} / decade",
-              f"{'significant' if t_count['significant'] else 'not significant'} · {fmt_p(t_count['p_mk_mod'])}",
-              delta_color="off")
-    c2.metric("Typical event length (days)", f"{fmt_s(t_len['slope_decade'])} / decade",
-              f"{'significant' if t_len['significant'] else 'not significant'} · {fmt_p(t_len['p_mk_mod'])}",
-              delta_color="off")
+    tag = season_tag(season)
+    c1.markdown(card(f"<b>Dunkelflaute frequency</b> · events per {tag}",
+                     f"{fmt_s(t_count['slope_decade'])} <span class='dfx-unit'>events / decade</span>",
+                     f"{sig_tag(t_count)} <span class='dfx-nw'>· {fmt_p(t_count['p_mk_mod'])}</span>"), unsafe_allow_html=True)
+    c2.markdown(card(f"<b>Dunkelflaute event length</b> · average days per event, each {tag}",
+                     f"{fmt_s(t_len['slope_decade'])} <span class='dfx-unit'>days / decade</span>",
+                     f"{sig_tag(t_len)} <span class='dfx-nw'>· {fmt_p(t_len['p_mk_mod'])}</span>"), unsafe_allow_html=True)
     cells = run_cells(key(d), metric)
-    up = int(((cells["slope_decade"] > 0) & cells["significant_fdr"]).sum())
-    down = int(((cells["slope_decade"] < 0) & cells["significant_fdr"]).sum())
-    c3.metric("Where: significant cells", f"{up} ↑ · {down} ↓",
-              f"of {len(cells)} grid cells (after FDR)", delta_color="off")
+    sig_cells = cells[cells["significant_fdr"]].sort_values("slope_decade")
+    up = int((sig_cells["slope_decade"] > 0).sum())
+    down = int((sig_cells["slope_decade"] < 0).sum())
+    measure = METRIC_LABELS[metric].split(" (")[0]
+    unit = METRIC_UNITS[metric]
+    season_word = "winter" if season == "winter" else "full year"
+    if len(sig_cells):
+        items = "".join(
+            f"<li><b>{place_name(r.lat, r.lon)}</b> ({r.lat:.1f}°N, {r.lon:.1f}°E): "
+            f'<span class="{"dfx-rise" if r.slope_decade > 0 else "dfx-fall"}">{fmt_s(r.slope_decade, 2)} {unit} per decade</span></li>'
+            for r in sig_cells.itertuples())
+        body = f"<ul>{items}</ul>"
+    else:
+        body = "<div style='margin:0.35rem 0'>No location has a significant trend.</div>"
+    hover = (f"<b>Significant trends in {measure[0].lower() + measure[1:]}, {season_word}</b>{body}"
+             "<div class='dfx-foot'>FDR = false discovery rate: a correction for testing 80 locations at once.</div>")
+    c3.markdown(card("<b>Locations with a significant trend</b>",
+                     f'<span class="dfx-nw {"dfx-rise" if up else "dfx-zero"}">{up} rising</span> · '
+                     f'<span class="dfx-nw {"dfx-fall" if down else "dfx-zero"}">{down} falling</span>',
+                     f"of {len(cells)} grid location cells (after FDR)", hover=hover, small=True), unsafe_allow_html=True)
     drv_tab, att, cfs = run_drivers(key(d), metric)
     if len(att):
         sig = att[att["significant_holm"]]
         if len(sig):
             short = {"wind_hub": "Wind", "ghi": "Sun"}
-            parts = [f"{short[k]} {fmt_s(r.reduction_decade, 1)}" for k, r in sig.iterrows()]
-            c4.metric("Driver effects (significant)", " · ".join(parts),
-                      f"{METRIC_LABELS[metric].split(' (')[0].lower()} per decade", delta_color="off")
+            parts = [f'<span class="dfx-nw">{short[k]} {fmt_s(r.reduction_decade, 1)}</span>' for k, r in sig.iterrows()]
+            c4.markdown(card("<b>Driver effects (significant)</b>", " · ".join(parts), small=True, sub=
+                             f"{measure[0].lower() + measure[1:]} per decade"), unsafe_allow_html=True)
         else:
-            c4.metric("Driver effects", "None", "wind & sun trends: no significant effect", delta_color="off")
+            c4.markdown(card("<b>Driver effects</b>", "None", "wind & sun trends: no significant effect"),
+                        unsafe_allow_html=True)
 
     # ---------------- time series
     st.subheader(f"{METRIC_LABELS[metric]} per {'winter' if season == 'winter' else 'year'}")
