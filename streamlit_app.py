@@ -4,7 +4,7 @@ Run locally with:  streamlit run streamlit_app.py
 """
 from __future__ import annotations
 
-from dataclasses import replace
+from plotly.subplots import make_subplots
 
 import numpy as np
 import pandas as pd
@@ -13,11 +13,12 @@ import streamlit as st
 
 from dfx import analysis, config, events, stats
 from dfx.panel import DRIVER_LABELS, Panel, detrend_factor
+from dfx.headlines import headline_html
 
-st.set_page_config(page_title="Dunkelflaute Explorer", page_icon="🌥️", layout="wide")
+st.set_page_config(page_title="Dunkelflaute Explorer", layout="wide")
 
-BLUE, ORANGE, GREY, RED = "#2a6fdb", "#e8743b", "#8a8a8a", "#c0392b"
-METRIC_LABELS = events.METRICS
+BLUE, ORANGE, GREY = "#2a6fdb", "#e8743b", "#8a8a8a"
+METRIC_LABELS = events.METRICS | {"total_days": "Days in events that start this season"}
 
 
 # ------------------------------------------------------------------ cached computation
@@ -74,78 +75,99 @@ def fmt_p(p: float) -> str:
 
 
 # ------------------------------------------------------------------ sidebar controls
+CONTROL_DEFAULTS = dict(season="winter", metric="total_days", thr=10, min_days=2,
+                        mix=0.5, turbine="default", remove_wind=False, remove_ghi=False)
+
+
+def reset_controls():
+    st.session_state.update(CONTROL_DEFAULTS)
+    st.session_state.pop("event_date", None)
+
+
+for control, default in CONTROL_DEFAULTS.items():
+    st.session_state.setdefault(control, default)
+
 st.sidebar.title("Controls")
-if st.sidebar.button("Reset to default settings"):
-    for k in list(st.session_state.keys()):
-        del st.session_state[k]
-season = st.sidebar.radio("Season", ["winter", "year"], format_func=lambda s: "Winter (Nov–Feb)" if s == "winter" else "Full year",
+st.sidebar.button("Reset", on_click=reset_controls)
+season = st.sidebar.radio("Season", ["winter", "year"], index=None, format_func=lambda s: "Winter (Nov–Feb)" if s == "winter" else "Full year",
                           key="season", help="Dunkelflaute is mostly a winter problem: short days, low sun, calm high-pressure spells.")
 st.sidebar.caption(f"Period: 1984–2025 · Baseline: {config.BASELINE[0]}–{config.BASELINE[1]}")
-metric = st.sidebar.selectbox("Measure", list(METRIC_LABELS), index=3, format_func=METRIC_LABELS.get, key="metric")
-thr = st.sidebar.slider("Low-output threshold (percentile of baseline days)", 5, 25, 10, 5, key="thr",
-                        help="A day counts as 'low' if combined wind + solar output is below this percentile of all 1984–2013 days.")
-min_days = st.sidebar.radio("Minimum event length", [1, 2, 3], index=1, horizontal=True, format_func=lambda n: f"{n} day{'s' if n > 1 else ''}", key="min_days")
-mix = st.sidebar.slider("Wind share of the fleet", 0.0, 1.0, 0.5, 0.1, key="mix", help="Frozen mix of wind vs solar capacity.")
-turbine = st.sidebar.selectbox("Turbine (frozen for all years)", list(config.TURBINES), format_func=lambda k: config.TURBINES[k].name, key="turbine")
-st.sidebar.markdown("**Drivers** — switch one off to remove its long-term trend")
-on_wind = st.sidebar.toggle("Wind speed", value=True, key="on_wind")
-on_ghi = st.sidebar.toggle("Solar irradiance", value=True, key="on_ghi")
-st.sidebar.caption("Off = that driver keeps its day-to-day weather but loses its 1984–2025 trend. "
-                   "Cloud, pressure, temperature and NAO act *through* wind and sun; see 'Why is it changing?'.")
+metric = st.sidebar.selectbox("Measure", list(METRIC_LABELS), index=None, format_func=METRIC_LABELS.get, key="metric")
+with st.sidebar.expander("Model settings", expanded=False):
+    thr = st.slider("Low-output threshold (percentile of baseline days)", 5, 25, step=5, key="thr",
+                            help="A day counts as 'low' if combined wind + solar output is below this percentile of all 1984–2013 days.")
+    min_days = st.radio("Minimum event length", [1, 2, 3], index=None, horizontal=True, format_func=lambda n: f"{n} day{'s' if n > 1 else ''}", key="min_days")
+    mix = st.slider("Wind share of the fleet", 0.0, 1.0, step=0.1, key="mix", help="Frozen mix of wind vs solar capacity.")
+    turbine = st.selectbox("Turbine (frozen for all years)", list(config.TURBINES), index=None, format_func=lambda k: config.TURBINES[k].name, key="turbine")
+    st.markdown("**Long-term weather sensitivity**")
+    remove_wind = st.toggle("Remove long-term wind trend from comparison", key="remove_wind")
+    remove_ghi = st.toggle("Remove long-term solar trend from comparison", key="remove_ghi")
+    st.caption("Checked = remove that input's 1984–2025 trend while retaining daily variability. "
+                       "Only the long-term comparison changes; event inspection uses historical weather.")
 
 d = config.Definition(threshold_pct=float(thr), min_days=int(min_days), wind_share=float(mix), turbine=turbine, season=season)
-cf, ev, m, thr_cf, cf_m = run_regional(key(d), not on_wind, not on_ghi)
+try:
+    load_panel()
+except (OSError, ValueError, KeyError) as exc:
+    st.error("Couldn't load weather data. Check the bundled data files, then retry.")
+    st.caption(str(exc))
+    if st.button("Retry weather data"):
+        st.cache_resource.clear()
+        st.cache_data.clear()
+        st.rerun()
+    st.stop()
+
+cf, ev, m, thr_cf, cf_m = run_regional(key(d), remove_wind, remove_ghi)
 y = m[metric]
 t = stats.trend(y)
-t_count = stats.trend(m["count"])
-t_len = stats.trend(m["mean_len"])
 pc = stats.period_compare(y)
 
 # ------------------------------------------------------------------ header
-st.title("🌥️ Dunkelflaute Explorer")
-st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* little sun — getting more frequent or longer over {config.REGION_NAME}, and why?**  \n"
-            "Built on NASA POWER data (MERRA-2 wind, CERES/SRB sunlight), 1984–2025.")
+st.title("Dunkelflaute Explorer")
+st.write("Low wind and solar output in Germany, 1984–2025")
+st.caption("Weather-based estimate for a hypothetical fixed fleet · NASA POWER · Germany and surroundings")
 
-tab_dash, tab_walk, tab_defs, tab_method = st.tabs(["📊 Dashboard", "🕵️ Detective walkthrough", "📖 Definitions", "🔬 Method & data"])
+rule = (f"A drought is {min_days}+ consecutive days strictly below {thr_cf:.2%} modeled combined capacity factor. "
+        f"This cutoff is the {thr:g}th percentile of 1984–2013 daily output for this fleet.")
+unit = {"count": "events", "mean_len": "days", "max_len": "days", "total_days": "days",
+        "severity": "CF shortfall × days"}[metric]
+period = "winter" if season == "winter" else "annual"
+measure = {"total_days": "low-output days", "count": "low-output event count",
+           "mean_len": "typical low-output event length", "max_len": "longest low-output event",
+           "severity": "low-output severity"}[metric]
+interval_crosses_zero = t["ci_low"] <= 0 <= t["ci_high"]
+finding = (f"No clear trend in {period} {measure}" if interval_crosses_zero
+           else f"{'Rising' if t['slope_decade'] > 0 else 'Falling'} {period} {measure}")
 
-with tab_dash:
-    # ---------------- verdict cards
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Frequency (events per season)", f"{fmt_s(t_count['slope_decade'])} / decade",
-              f"{'significant' if t_count['significant'] else 'not significant'} · {fmt_p(t_count['p_mk_mod'])}",
-              delta_color="off")
-    c2.metric("Typical event length (days)", f"{fmt_s(t_len['slope_decade'])} / decade",
-              f"{'significant' if t_len['significant'] else 'not significant'} · {fmt_p(t_len['p_mk_mod'])}",
-              delta_color="off")
+tab_overview, tab_events, tab_method = st.tabs(["Overview", "Events", "Method & data"])
+
+with tab_overview:
+    frequency = stats.trend(m["count"])
+    event_length = stats.trend(m["mean_len"])
     cells = run_cells(key(d), metric)
-    up = int(((cells["slope_decade"] > 0) & cells["significant_fdr"]).sum())
-    down = int(((cells["slope_decade"] < 0) & cells["significant_fdr"]).sum())
-    c3.metric("Where: significant cells", f"{up} ↑ · {down} ↓",
-              f"of {len(cells)} grid cells (after FDR)", delta_color="off")
     drv_tab, att, cfs = run_drivers(key(d), metric)
-    if len(att):
-        sig = att[att["significant_holm"]]
-        if len(sig):
-            short = {"wind_hub": "Wind", "ghi": "Sun"}
-            parts = [f"{short[k]} {fmt_s(r.reduction_decade, 1)}" for k, r in sig.iterrows()]
-            c4.metric("Driver effects (significant)", " · ".join(parts),
-                      f"{METRIC_LABELS[metric].split(' (')[0].lower()} per decade", delta_color="off")
-        else:
-            c4.metric("Driver effects", "None", "wind & sun trends: no significant effect", delta_color="off")
+    significant_effects = att[att["significant_holm"]] if len(att) else att
+    names = {"wind_hub": "Wind", "ghi": "Solar"}
+    effects = [f"{names.get(name, name)} {fmt_s(row.reduction_decade, 1)}"
+               for name, row in significant_effects.iterrows()]
+    st.html(headline_html(frequency, event_length, cells, effects, unit, METRIC_LABELS[metric].lower()))
+    st.caption(f"Historical-weather simulation · {'Nov–Feb winters' if season == 'winter' else 'Calendar years'} · "
+               "Frequency and length use the autocorrelation-corrected Mann–Kendall test (p < 0.05). "
+               "Weather-trend removal switches affect the chart comparison, not these historical-weather tests.")
 
+    st.subheader(finding)
     # ---------------- time series
-    st.subheader(f"{METRIC_LABELS[metric]} per {'winter' if season == 'winter' else 'year'}")
     yrs = y.index.values
     fig = go.Figure()
-    fig.add_bar(x=yrs, y=y.values, name="Actual", marker_color=BLUE, opacity=0.55)
+    fig.add_bar(x=yrs, y=y.values, name="Events from historical weather", marker_color=BLUE, opacity=0.55)
     if t.get("n", 0) >= 8:
         line = t["intercept"] + t["slope_decade"] / 10 * yrs
-        fig.add_scatter(x=yrs, y=line, name=f"Trend {fmt_s(t['slope_decade'])}/decade ({fmt_p(t['p_mk_mod'])})",
-                        line=dict(color="black", dash="dash"))
+        fig.add_scatter(x=yrs, y=line, name="Estimated trend",
+                        line=dict(color=GREY, dash="dash"))
     roll = y.rolling(10, center=True, min_periods=5).mean()
     fig.add_scatter(x=yrs, y=roll.values, name="10-year average", line=dict(color=BLUE, width=3))
     if cf_m is not None:
-        off = [n for n, on in (("wind", on_wind), ("sun", on_ghi)) if not on]
+        off = [n for n, removed in (("wind", remove_wind), ("solar", remove_ghi)) if removed]
         yc = cf_m[metric]
         tc = stats.trend(yc)
         fig.add_scatter(x=yrs, y=yc.rolling(10, center=True, min_periods=5).mean().values,
@@ -157,129 +179,135 @@ with tab_dash:
     fig.add_vrect(x0=base[0] - 0.5, x1=base[1] + 0.5, fillcolor=GREY, opacity=0.08, line_width=0,
                   annotation_text="baseline", annotation_position="top left")
     fig.update_layout(height=380, margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", y=-0.15),
-                      yaxis_title=METRIC_LABELS[metric], xaxis_title=None)
+                      yaxis_title=unit, xaxis_title=None)
     st.plotly_chart(fig, width="stretch")
-    st.caption(f"Recent ({config.RECENT[0]}–{config.RECENT[1]}) average {pc['recent_mean']:.2f} vs baseline {pc['baseline_mean']:.2f} "
-               f"(ratio {pc['ratio']:.2f}, Mann-Whitney {fmt_p(pc['p_mannwhitney'])}). "
-               f"Sen's slope 95% range: {fmt_s(t.get('ci_low', 0))} to {fmt_s(t.get('ci_high', 0))} per decade.")
+    st.markdown(f"**Estimate: {fmt_s(t['slope_decade'])} {unit} per decade** · "
+                f"95% interval: **{fmt_s(t['ci_low'])} to {fmt_s(t['ci_high'])} {unit} per decade** · "
+                f"{t['n']} {'winters' if season == 'winter' else 'years'}")
+    st.caption("An interval spanning zero leaves both a rise and a fall plausible; it does not establish no change.")
+    st.caption(f"Recent ({config.RECENT[0]}–{config.RECENT[1]}) average: {pc['recent_mean']:.2f} "
+               f"versus {pc['baseline_mean']:.2f} in {base[0]}–{base[1]}.")
+    with st.expander("How to read the chart"):
+        st.write("Bars show modeled low-output events for each season. The solid line is a 10-year average; "
+                 "the dashed line estimates the long-term trend. Orange lines, when enabled in Model settings, "
+                 "show the comparison with selected weather trends removed.")
+        st.write(rule)
+        st.caption("Capacity factor is output as a share of maximum possible output; 30% means 30% of full power. "
+                   "Neither wind nor solar must individually cross a cutoff. "
+                   "Winter means Nov–Feb, named by January year. Full event runs are assigned by start date, "
+                   "so low-output day totals can include days beyond the season.")
+        st.caption(f"Applied fleet: {mix:.0%} wind / {1-mix:.0%} solar · {config.TURBINES[turbine].name}. "
+                   f"Autocorrelation-corrected Mann–Kendall {fmt_p(t['p_mk_mod'])}.")
 
-    # ---------------- map + drivers
-    left, right = st.columns(2)
-    with left:
-        st.subheader("Where is it changing?")
-        cells = cells.copy()
-        cells["label"] = np.where(cells["significant_fdr"], "significant", "not significant")
-        lim = float(np.nanmax(np.abs(cells["slope_decade"]))) or 1.0
-        grid = cells.pivot(index="lat", columns="lon", values="slope_decade")
-        pv = cells.pivot(index="lat", columns="lon", values="p")
-        mfig = go.Figure(go.Heatmap(z=grid.values, x=grid.columns, y=grid.index, colorscale="RdBu_r", zmin=-lim, zmax=lim,
-                                    colorbar=dict(title="per decade"), customdata=pv.values, xgap=2, ygap=2,
-                                    hovertemplate="%{y}°N %{x}°E<br>%{z:+.2f} per decade<br>p = %{customdata:.3f}<extra></extra>"))
-        sig = cells[cells["significant_fdr"]]
-        mfig.add_scatter(x=sig["lon"], y=sig["lat"], mode="markers", marker=dict(symbol="star", size=16, color="black"),
-                         name="significant", hoverinfo="skip")
-        for name, lat, lon in (("Hamburg", 53.55, 10.0), ("Berlin", 52.52, 13.4), ("Cologne", 50.94, 6.96), ("Munich", 48.14, 11.58)):
-            mfig.add_annotation(x=lon, y=lat, text=name, showarrow=False, font=dict(size=11, color="#222"), bgcolor="rgba(255,255,255,0.6)")
-        mfig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), showlegend=False,
-                           xaxis=dict(title="Longitude (°E)", dtick=1), yaxis=dict(title="Latitude (°N)", dtick=1, scaleanchor="x", scaleratio=1.5))
-        st.plotly_chart(mfig, width="stretch")
-        st.caption("Each square is a 1° grid cell. Red = rising, blue = falling. ★ = significant after false-discovery-rate correction.")
-    with right:
-        st.subheader("Why is it changing?")
-        if len(att):
-            bfig = go.Figure()
-            bfig.add_bar(y=[DRIVER_LABELS[k][0] for k in att.index], x=att["reduction_decade"], orientation="h",
-                         marker_color=[BLUE if s else GREY for s in att["significant_holm"]],
-                         error_x=dict(type="data", symmetric=False,
-                                      array=att["reduction_high"] - att["reduction_decade"],
-                                      arrayminus=att["reduction_decade"] - att["reduction_low"]))
-            bfig.add_vline(x=0, line_color="black")
-            bfig.update_layout(height=200, margin=dict(l=10, r=10, t=10, b=10),
-                               xaxis_title=f"Trend explained ({METRIC_LABELS[metric].split('(')[-1].rstrip(')')} per decade)")
-            st.plotly_chart(bfig, width="stretch")
-            st.caption("Each bar = how much that driver's long-term change has added to (+) or removed from (−) the Dunkelflaute trend, "
-                       "found by re-running history with the driver's trend taken out. Line = 95% bootstrap range; blue = significant "
-                       "(Holm-corrected). Ranges include uncertainty in the driver's own trend. Drivers can cancel each other out, so we show amounts, not percentages.")
-        show = drv_tab[["label", "unit", "trend_decade", "trend_p", "sens_slope", "sens_p", "implied_contribution_decade"]].copy()
-        show.columns = ["Driver", "Unit", "Trend /decade", "Trend p", f"Link to {metric}", "Link p", "Trend × link"]
-        st.dataframe(show.style.format({"Trend /decade": "{:+.3f}", "Trend p": "{:.3f}", f"Link to {metric}": "{:+.2f}",
-                                        "Link p": "{:.3f}", "Trend × link": "{:+.2f}"}), hide_index=True, width="stretch")
-        st.caption("A driver explains the trend only if it is changing significantly **and** linked to Dunkelflaute "
-                   "(year-to-year link measured on detrended series). ⚠️ Winter cloud cover jumps around 2004 with no trend before or after, "
-                   "which points to a change in the satellite cloud record rather than the weather; treat its trend with caution.")
+    with st.expander("More analysis", expanded=False):
+        # ---------------- map + drivers
+        left, right = st.columns(2)
+        with left:
+            st.subheader(f"Local trend in modeled {METRIC_LABELS[metric].lower()}")
+            st.caption(f"{unit} per decade · Grid-cell trends, not daily output or event selection.")
+            cells = cells.copy()
+            cells["label"] = np.where(cells["significant_fdr"], "significant", "not significant")
+            lim = float(np.nanmax(np.abs(cells["slope_decade"]))) or 1.0
+            grid = cells.pivot(index="lat", columns="lon", values="slope_decade")
+            pv = cells.pivot(index="lat", columns="lon", values="p")
+            mfig = go.Figure(go.Heatmap(z=grid.values, x=grid.columns, y=grid.index, colorscale="RdBu_r", zmin=-lim, zmax=lim,
+                                        colorbar=dict(title="per decade"), customdata=pv.values, xgap=2, ygap=2,
+                                        hovertemplate="%{y}°N %{x}°E<br>%{z:+.2f} per decade<br>p = %{customdata:.3f}<extra></extra>"))
+            sig = cells[cells["significant_fdr"]]
+            mfig.add_scatter(x=sig["lon"], y=sig["lat"], mode="markers", marker=dict(symbol="star", size=16, color="black"),
+                             name="significant", hoverinfo="skip")
+            for name, lat, lon in (("Hamburg", 53.55, 10.0), ("Berlin", 52.52, 13.4), ("Cologne", 50.94, 6.96), ("Munich", 48.14, 11.58)):
+                mfig.add_annotation(x=lon, y=lat, text=name, showarrow=False, font=dict(size=11, color="#222"), bgcolor="rgba(255,255,255,0.6)")
+            mfig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), showlegend=False,
+                               xaxis=dict(title="Longitude (°E)", dtick=1), yaxis=dict(title="Latitude (°N)", dtick=1, scaleanchor="x", scaleratio=1.5))
+            st.plotly_chart(mfig, width="stretch")
+            st.caption("Each square is a 1° grid cell. Red = rising, blue = falling. ★ = significant after false-discovery-rate correction. The color range rescales with the selected settings.")
+            with st.expander("View grid-cell trend data"):
+                st.dataframe(cells[["lat", "lon", "slope_decade", "p", "significant_fdr"]], hide_index=True)
+        with right:
+            st.subheader("Sensitivity to long-term weather trends")
+            if len(att):
+                bfig = go.Figure()
+                bfig.add_bar(y=[DRIVER_LABELS[k][0] for k in att.index], x=att["reduction_decade"], orientation="h",
+                             marker_color=[BLUE if s else GREY for s in att["significant_holm"]],
+                             error_x=dict(type="data", symmetric=False,
+                                          array=att["reduction_high"] - att["reduction_decade"],
+                                          arrayminus=att["reduction_decade"] - att["reduction_low"]))
+                bfig.add_vline(x=0, line_color=GREY)
+                st.caption(f"Modeled change in trend · {unit} per decade · Lines show 95% bootstrap intervals.")
+                bfig.update_layout(height=240, margin=dict(l=10, r=10, t=10, b=10), xaxis_title=None)
+                st.plotly_chart(bfig, width="stretch")
+                st.caption("Each bar = how much that driver's long-term change has added to (+) or removed from (−) the Dunkelflaute trend, "
+                           "found by re-running history with the driver's trend taken out. Line = 95% bootstrap range; blue = significant "
+                           "(Holm-corrected). Ranges include uncertainty in the driver's own trend. Drivers can cancel each other out, so we show amounts, not percentages.")
+            show = drv_tab[["label", "unit", "trend_decade", "trend_p", "sens_slope", "sens_p", "implied_contribution_decade"]].copy()
+            show.columns = ["Driver", "Unit", "Trend /decade", "Trend p", f"Link to {metric}", "Link p", "Trend × link"]
+            st.dataframe(show.style.format({"Trend /decade": "{:+.3f}", "Trend p": "{:.3f}", f"Link to {metric}": "{:+.2f}",
+                                            "Link p": "{:.3f}", "Trend × link": "{:+.2f}"}), hide_index=True, width="stretch")
+            st.caption("A driver explains the trend only if it is changing significantly **and** linked to Dunkelflaute "
+                       "(year-to-year link measured on detrended series). ⚠️ Winter cloud cover jumps around 2004 with no trend before or after, "
+                       "which points to a change in the satellite cloud record rather than the weather; treat its trend with caution.")
 
+
+with tab_events:
     # ---------------- events
-    st.subheader("Event explorer")
-    if len(ev):
-        evs = ev.assign(season_year=events.season_year(pd.DatetimeIndex(ev["start"]), season).values).dropna(subset=["season_year"])
-        efig = go.Figure(go.Scatter(x=evs["start"], y=evs["length"], mode="markers",
-                                    marker=dict(size=6 + evs["severity"] / evs["severity"].max() * 18, color=BLUE, opacity=0.6),
-                                    text=[f"{s:%d %b %Y}: {n} days" for s, n in zip(evs["start"], evs["length"])], hoverinfo="text"))
-        efig.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="Length (days)")
-        st.plotly_chart(efig, width="stretch")
-        choices = evs.sort_values("severity", ascending=False).head(25)
-    if len(ev) and len(choices):
-        pick = st.selectbox("Look inside one of the 25 most severe events",
-                            choices.index, format_func=lambda i: f"{choices.loc[i, 'start']:%d %b %Y} — {choices.loc[i, 'length']} days")
-        e = evs.loc[pick]
+    st.subheader("Event explorer", anchor="event-explorer")
+    st.caption(rule)
+    st.caption("Historical-weather simulation. Events are assigned by start date; full runs can extend beyond the season. "
+               "Long-term weather comparison switches do not alter these events.")
+    evs = ev.assign(season_year=events.season_year(pd.DatetimeIndex(ev["start"]), season).values).dropna(subset=["season_year"])
+    evs = evs[evs["season_year"].isin(events.valid_years(season))]
+    if len(evs):
+        choices = evs.sort_values("severity", ascending=False).set_index("start", drop=False)
+        dates = choices.index.strftime("%Y-%m-%d").tolist()
+        previous = st.session_state.get("event_date")
+        if previous not in dates:
+            st.session_state.event_date = dates[0]
+            if previous is not None:
+                st.info(f"The previous event starting {previous} no longer qualifies under these settings. "
+                        f"Showing {dates[0]}. Event boundaries can shift when the cutoff changes.")
+        pick = st.selectbox("Inspect an event (most severe first)", dates, key="event_date",
+                            format_func=lambda date: f"{date} — {int(choices.loc[pd.Timestamp(date), 'length'])} days")
+        e = choices.loc[pd.Timestamp(pick)]
+        st.caption(f"Updated event: {e['start']:%d %b %Y}–{e['end']:%d %b %Y} · "
+                   f"{int(e['length'])} days · Lowest modeled CF {e['min_cf']:.2%} · Cutoff {thr_cf:.2%}")
         win = slice(e["start"] - pd.Timedelta(days=10), e["end"] + pd.Timedelta(days=10))
         dd = regional_daily().loc[win]
         cfw = cf.loc[win]
-        wfig = go.Figure()
-        wfig.add_scatter(x=cfw.index, y=cfw.values, name="Combined output (CF)", line=dict(color="black", width=3))
-        wfig.add_hline(y=thr_cf, line_dash="dot", annotation_text="low-output threshold")
-        wfig.add_vrect(x0=e["start"], x1=e["end"] + pd.Timedelta(days=1), fillcolor=ORANGE, opacity=0.15, line_width=0)
-        wfig.add_scatter(x=dd.index, y=dd["wind_hub"], name="Wind at 100 m (m/s)", yaxis="y2", line=dict(color=BLUE))
-        wfig.add_scatter(x=dd.index, y=dd["ghi"], name="Sunlight (kWh/m²/day)", yaxis="y2", line=dict(color=ORANGE))
-        wfig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", y=-0.2),
-                           yaxis=dict(title="Capacity factor"), yaxis2=dict(title="Weather", overlaying="y", side="right"))
-        st.plotly_chart(wfig, width="stretch")
-
-    # ---------------- findings
-    st.subheader("Findings summary")
-    verdict = lambda tt: "a statistically significant" if tt["significant"] else "no statistically significant"
-    st.info(
-        f"Over {config.REGION_NAME}, {'winter' if season == 'winter' else 'annual'} Dunkelflaute shows {verdict(t_count)} change in **frequency** "
-        f"({fmt_s(t_count['slope_decade'])} events per decade, {fmt_p(t_count['p_mk_mod'])}) and {verdict(t_len)} change in **typical length** "
-        f"({fmt_s(t_len['slope_decade'])} days per decade, {fmt_p(t_len['p_mk_mod'])}). "
-        f"For {METRIC_LABELS[metric].lower()}, the recent period averages {pc['recent_mean']:.2f} versus {pc['baseline_mean']:.2f} in {base[0]}–{base[1]}. "
-        f"{up} of {len(cells)} grid cells show a significant rise and {down} a significant fall."
-    )
-
-with tab_walk:
-    st.header("Become a trend detective in five steps")
-    st.markdown("Follow along with the default settings (press **Reset to default settings** in the sidebar first).")
-    st.markdown("""
-1. **Ask the question.** Dunkelflaute is German for 'dark doldrums': days when wind turbines *and* solar panels produce very little.
-   We ask: *are these spells becoming more common or longer?*
-2. **Build the time series.** For every day since 1984 we turn NASA weather data into the power a fixed, unchanging set of turbines and
-   panels would produce. Days in the lowest 10% count as 'low'; two or more low days in a row make an event. Look at the bars on the Dashboard.
-3. **Test the trend.** A line through noisy data can slope by chance. The **Mann-Kendall test** asks whether the ups outnumber the downs
-   more than chance allows. If *p* is below 0.05, we call the trend **significant**. Check the verdict cards.
-4. **Find where.** The map runs the same test in every grid cell. Some regions can rise while others fall — that is exactly what the challenge asks us to look for.
-5. **Ask why.** Switch **Wind speed** off in the sidebar. The orange line shows what would have happened if wind had no long-term trend.
-   The gap between the lines is wind's share. Then try **Solar irradiance**.
-""")
-    st.success("Detective tip: try a different threshold or turbine. A real trend should survive small changes to the definition.")
-
-with tab_defs:
-    st.header("Plain-language definitions")
-    st.markdown("""
-| Term | What it means |
-|---|---|
-| **Dunkelflaute** | A spell of at least 2 days when combined wind and solar output stays very low. |
-| **Capacity factor (CF)** | Power produced as a share of the maximum possible. 0.30 means 30% of full power. |
-| **Fixed fleet** | We use the same turbine and panel for every year, so changes come from the weather, not from new technology. |
-| **Baseline** | 1984–2013, the 30-year reference period used to set the 'low output' threshold. |
-| **Trend** | A steady rise or fall over the years, measured per decade. |
-| **Mann-Kendall test** | Checks whether values keep going up (or down) more often than chance would produce. |
-| **Sen's slope** | A robust estimate of how fast something changes: the middle of all the year-to-year slopes. |
-| **p-value** | The chance of seeing a trend this strong if there were really no trend. Below 0.05 = 'significant'. |
-| **False-discovery-rate (FDR)** | A correction so that testing many map cells at once doesn't flag some by luck. |
-| **Bootstrap range** | We reshuffle the years 1,000 times to see how much a result could vary; the middle 95% is the range. |
-| **NAO** | North Atlantic Oscillation, a see-saw in air pressure that steers Europe's winter winds. |
-| **Wind at 100 m** | Turbine hub height. NASA gives wind at 50 m; we scale it up with a standard formula. |
-""")
+        with st.spinner(f"Updating event chart for {pick}…"):
+            wfig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                                 subplot_titles=("Modeled capacity factor (%)", "Wind at 100 m (m/s)", "Sunlight (kWh/m²/day)"))
+            wfig.add_scatter(x=cfw.index, y=cfw.values, name="Modeled output using historical weather",
+                            line=dict(color=BLUE, width=3), row=1, col=1)
+            wfig.add_hline(y=thr_cf, line_dash="dash", line_color=ORANGE,
+                          annotation_text=f"Cutoff {thr_cf:.2%}", row=1, col=1)
+            wfig.add_scatter(x=dd.index, y=dd["wind_hub"], name="Wind at 100 m", line=dict(color=BLUE), row=2, col=1)
+            wfig.add_scatter(x=dd.index, y=dd["ghi"], name="Sunlight", line=dict(color=ORANGE), row=3, col=1)
+            wfig.add_vrect(x0=e["start"], x1=e["end"] + pd.Timedelta(days=1), fillcolor=ORANGE,
+                          opacity=0.15, line_width=0, row="all", col=1)
+            wfig.update_yaxes(tickformat=".0%", row=1, col=1)
+            wfig.update_xaxes(nticks=5)
+            wfig.update_layout(height=650, margin=dict(l=10, r=10, t=30, b=10), showlegend=False)
+            st.plotly_chart(wfig, width="stretch")
+        with st.expander("Event history"):
+            efig = go.Figure(go.Scatter(x=evs["start"], y=evs["length"], mode="markers",
+                                        marker=dict(size=9, color=BLUE, opacity=0.6),
+                                        text=[f"{s:%d %b %Y}: {n} days" for s, n in zip(evs["start"], evs["length"])], hoverinfo="text"))
+            efig.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="Length (days)")
+            st.plotly_chart(efig, width="stretch")
+            st.caption("Markers have equal size. All eligible events are selectable below, ranked by severity (CF shortfall × days).")
+        event_days = pd.DataFrame({"Date": cfw.index, "Modeled CF (%)": cfw.values * 100,
+                                   "Cutoff (%)": thr_cf * 100, "Wind at 100 m (m/s)": dd["wind_hub"].values,
+                                   "Sunlight (kWh/m²/day)": dd["ghi"].values,
+                                   "Selected event": (cfw.index >= e["start"]) & (cfw.index <= e["end"])})
+        with st.expander("View event-day data"):
+            st.dataframe(event_days, hide_index=True, width="stretch")
+            st.download_button("Download event-day data (CSV)", event_days.to_csv(index=False),
+                               file_name=f"modeled-event-{pick}.csv", mime="text/csv")
+        with st.expander("View all eligible events"):
+            st.dataframe(evs, hide_index=True, width="stretch")
+    else:
+        st.info("No events match these settings. Try a higher threshold or shorter minimum duration.")
 
 with tab_method:
     st.header("Method and data")
@@ -289,7 +317,9 @@ with tab_method:
 - **Wind power:** 50 m wind scaled to hub height (power law, α = 1/7), passed through a generic turbine power curve, averaged over an
   assumed hour-to-hour spread within each day (sd = {config.INTRADAY_CV:.0%} of the daily mean).
 - **Solar power:** daily irradiance ÷ 24 h at 1 kW/m² rating × performance ratio {config.PV_PERFORMANCE_RATIO}.
-- **Events:** regional (area-mean) combined CF below the {config.DEFAULT.threshold_pct:g}th percentile of baseline days for ≥ {config.DEFAULT.min_days} days.
+- **Active event rule:** {rule}
+- **Season accounting:** {"Nov–Feb, named by January year" if season == "winter" else "Full calendar years"}. Events are assigned by onset; day totals count the full run, including days outside the season. These totals are not in-winter burden.
+- **Coverage:** regional CF averages available grid cells. Seasonal zero-event totals are filled with zero; this is not an audited coverage indicator. Missing observations are not proof of no drought. Reported-generation and country comparisons are unavailable in this weather-based simulation.
 - **Statistics:** Mann-Kendall with Hamed-Rao autocorrelation correction; Sen's slope with 95% CI; Mann-Whitney recent vs baseline;
   Poisson regression on counts; Pettitt change-point; Benjamini-Hochberg FDR across cells.
 - **Attribution:** counterfactual runs with each direct driver's long-term trend removed (same threshold); moving-block bootstrap
