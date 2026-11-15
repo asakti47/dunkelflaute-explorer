@@ -135,13 +135,18 @@ def _slope(yrs: np.ndarray, y: np.ndarray) -> float:
 
 
 def bootstrap_share(actual: pd.Series, counterfactual: pd.Series, n: int = 1000,
-                    block: int = 5, seed: int = 42) -> dict:
+                    block: int = 5, seed: int = 42, driver: pd.Series | None = None) -> dict:
     """Share of the trend explained by a driver, with a moving-block bootstrap 95% range.
 
     Years are resampled in blocks with their labels kept, and the actual and counterfactual series are
-    resampled together (paired), so shared weather noise cancels.
+    resampled together (paired), so shared weather noise cancels. When the driver's own yearly series is given,
+    each resample also re-estimates the driver's trend and scales the effect by it, so uncertainty in whether
+    the driver is really trending is carried into the range (first-order approximation).
     """
-    df = pd.concat([actual.rename("a"), counterfactual.rename("c")], axis=1).dropna()
+    parts = [actual.rename("a"), counterfactual.rename("c")]
+    if driver is not None:
+        parts.append(driver.rename("d"))
+    df = pd.concat(parts, axis=1).dropna()
     yrs = df.index.values.astype(float)
     a, c = df["a"].values, df["c"].values
     s_a, s_c = _slope(yrs, a), _slope(yrs, c)
@@ -150,9 +155,13 @@ def bootstrap_share(actual: pd.Series, counterfactual: pd.Series, n: int = 1000,
     nb = int(np.ceil(len(df) / block))
     starts = np.arange(len(df) - block + 1)
     shares, reductions = [], []
+    d = df["d"].values if driver is not None else None
+    b_hat = _slope(yrs, d) if d is not None else None
     for _ in range(n):
         idx = np.concatenate([np.arange(s, s + block) for s in rng.choice(starts, nb)])[: len(df)]
         sa, sc = _slope(yrs[idx], a[idx]), _slope(yrs[idx], c[idx])
+        scale = _slope(yrs[idx], d[idx]) / b_hat if d is not None and b_hat else 1.0
+        sc = sa - (sa - sc) * scale
         reductions.append((sa - sc) * 10)
         if sa != 0:
             shares.append(1 - sc / sa)

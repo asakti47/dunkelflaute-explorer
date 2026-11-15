@@ -122,7 +122,7 @@ def drivers_and_attribution(panel: Panel, d: config.Definition, metric: str = "t
         ev_k = events.detect_events(cf_k, thr, d.min_days)
         m_k = events.yearly_metrics(ev_k, d.season)
         cf_series[k] = m_k[metric]
-        b = stats.bootstrap_share(y, m_k[metric], n=n_boot)
+        b = stats.bootstrap_share(y, m_k[metric], n=n_boot, driver=drv[k])
         att.append({"driver": k, "label": DRIVER_LABELS[k][0], **b})
     att = pd.DataFrame(att).set_index("driver")
     if len(att):
