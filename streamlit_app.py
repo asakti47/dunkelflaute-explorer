@@ -104,7 +104,7 @@ def place_name(lat: float, lon: float) -> str:
 
 
 def season_tag(season: str) -> str:
-    text = "❄️ winter" if season == "winter" else "📅 year"
+    text = "winter" if season == "winter" else "year"
     return f'<span class="dfx-season">{text}</span>'
 
 
@@ -147,6 +147,19 @@ CARD_CSS = f"""
   background: #ffffff; color: #262730; border: 1px solid rgba(49,51,63,0.2); border-radius: 0.5rem;
   box-shadow: 0 6px 18px rgba(0,0,0,0.15); padding: 0.7rem 0.85rem; font-size: 0.82rem; line-height: 1.45;}}
 .dfx-hover:hover .dfx-tip {{display: block;}}
+.dfx-key {{display: flex; flex-wrap: wrap; gap: 0.6rem 1.6rem; align-items: flex-start; font-size: 0.82rem;
+  margin: 0.2rem 0 0.4rem 0;}}
+.dfx-key-item {{display: flex; align-items: center; gap: 0.45rem;}}
+.dfx-key-list {{display: flex; flex-direction: column; gap: 0.35rem; padding-top: 0.05rem;}}
+.dfx-key-icon {{display: inline-flex; width: 1.1rem; justify-content: center;}}
+.dfx-key-scale {{flex-direction: column; align-items: stretch; gap: 0.15rem; min-width: 220px; flex: 1 1 220px; max-width: 320px;}}
+.dfx-key-bar {{height: 12px; border-radius: 3px; border: 1px solid rgba(49,51,63,0.15);}}
+.dfx-key-ticks {{display: flex; justify-content: space-between; line-height: 1.25; font-size: 0.76rem;}}
+.dfx-key-ticks span:nth-child(2) {{text-align: center;}}
+.dfx-key-ticks span:last-child {{text-align: right;}}
+.dfx-key-unit {{font-size: 0.74rem; opacity: 0.7; text-align: center;}}
+.dfx-key-sym {{font-size: 1.15rem; line-height: 1;}}
+.dfx-key-dot {{display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #111;}}
 .dfx-tip ul {{margin: 0.35rem 0 0.4rem 1.1rem; padding: 0;}}
 .dfx-tip li {{margin: 0.1rem 0;}}
 .dfx-tip .dfx-foot {{opacity: 0.7; font-size: 0.76rem; margin-top: 0.3rem;}}
@@ -163,7 +176,6 @@ season = st.sidebar.radio("Season", ["winter", "year"], format_func=lambda s: "W
                           key="season", help="Dunkelflaute is mostly a winter problem: short days, low sun, calm high-pressure spells.")
 st.sidebar.markdown(CARD_CSS + f'<div style="font-size:0.85rem;margin:-0.4rem 0 0.4rem 0">Shown on the cards as {season_tag(season)}</div>',
                     unsafe_allow_html=True)
-st.sidebar.caption(f"Period: 1984–2025 · Baseline: {config.BASELINE[0]}–{config.BASELINE[1]}")
 metric = st.sidebar.selectbox("Measure", list(METRIC_LABELS), index=3, format_func=METRIC_LABELS.get, key="metric")
 thr = st.sidebar.slider("Low-output threshold (percentile of baseline days)", 5, 25, 10, 5, key="thr",
                         help="A day counts as 'low' if combined wind + solar output is below this percentile of all 1984–2013 days.")
@@ -185,11 +197,12 @@ t_len = stats.trend(m["mean_len"])
 pc = stats.period_compare(y)
 
 # ------------------------------------------------------------------ header
-st.title("🌥️ Dunkelflaute Explorer")
+st.title("Dunkelflaute Explorer")
 st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* little sun — getting more frequent or longer over {config.REGION_NAME}, and why?**  \n"
-            "Built on NASA POWER data (MERRA-2 wind, CERES/SRB sunlight), 1984–2025.")
+            f"**Data:** NASA POWER, 1984–2025 · **Baseline:** {config.BASELINE[0]}–{config.BASELINE[1]}, which sets the low-output "
+            "cut-off and the 'before' period in comparisons")
 
-tab_dash, tab_defs, tab_method = st.tabs(["📊 Dashboard", "📖 Definitions", "🔬 Method & data"])
+tab_dash, tab_defs, tab_method = st.tabs(["Dashboard", "Definitions", "Method & data"])
 
 with tab_dash:
     # ---------------- verdict cards
@@ -268,23 +281,43 @@ with tab_dash:
     left, right = st.columns(2)
     with left:
         st.subheader("Where is it changing?")
-        cells = cells.copy()
-        cells["label"] = np.where(cells["significant_fdr"], "significant", "not significant")
         lim = float(np.nanmax(np.abs(cells["slope_decade"]))) or 1.0
+        mname = measure[0].lower() + measure[1:]
+        st.markdown(f"Change in {mname} per decade, {season_word}, at each of {len(cells)} grid location cells (1° squares).")
+        stops = ["#053061", "#2166ac", "#4393c3", "#92c5de", "#d1e5f0", "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#67001f"]
+        st.markdown(f"""
+<div class="dfx-key">
+  <div class="dfx-key-item dfx-key-scale">
+    <div class="dfx-key-bar" style="background: linear-gradient(to right, {', '.join(stops)});"></div>
+    <div class="dfx-key-ticks"><span>{-lim:.2f}<br><b>Fewer</b></span><span>0<br><b>No change</b></span><span>+{lim:.2f}<br><b>More</b></span></div>
+    <div class="dfx-key-unit">{unit} per decade</div>
+  </div>
+  <div class="dfx-key-list">
+    <div class="dfx-key-item"><span class="dfx-key-icon"><span class="dfx-key-sym">★</span></span>Significant trend (after FDR)</div>
+    <div class="dfx-key-item"><span class="dfx-key-icon"><span class="dfx-key-dot"></span></span>City, for orientation</div>
+  </div>
+</div>""", unsafe_allow_html=True)
         grid = cells.pivot(index="lat", columns="lon", values="slope_decade")
         pv = cells.pivot(index="lat", columns="lon", values="p")
+        sg = cells.pivot(index="lat", columns="lon", values="significant_fdr")
+        hover_txt = [[(f"<b>{place_name(la, lo)}</b><br>{la:.1f}°N, {lo:.1f}°E<br>{grid.loc[la, lo]:+.2f} {unit} per decade"
+                       f"<br>{fmt_p(pv.loc[la, lo])}<br>{'Significant (after FDR)' if sg.loc[la, lo] else 'Not significant'}")
+                      for lo in grid.columns] for la in grid.index]
         mfig = go.Figure(go.Heatmap(z=grid.values, x=grid.columns, y=grid.index, colorscale="RdBu_r", zmin=-lim, zmax=lim,
-                                    colorbar=dict(title="per decade"), customdata=pv.values, xgap=2, ygap=2,
-                                    hovertemplate="%{y}°N %{x}°E<br>%{z:+.2f} per decade<br>p = %{customdata:.3f}<extra></extra>"))
+                                    showscale=False, text=hover_txt, xgap=2, ygap=2,
+                                    hovertemplate="%{text}<extra></extra>"))
         sig = cells[cells["significant_fdr"]]
         mfig.add_scatter(x=sig["lon"], y=sig["lat"], mode="markers", marker=dict(symbol="star", size=16, color="black"),
                          name="significant", hoverinfo="skip")
-        for name, lat, lon in (("Hamburg", 53.55, 10.0), ("Berlin", 52.52, 13.4), ("Cologne", 50.94, 6.96), ("Munich", 48.14, 11.58)):
-            mfig.add_annotation(x=lon, y=lat, text=name, showarrow=False, font=dict(size=11, color="#222"), bgcolor="rgba(255,255,255,0.6)")
-        mfig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), showlegend=False,
-                           xaxis=dict(title="Longitude (°E)", dtick=1), yaxis=dict(title="Latitude (°N)", dtick=1, scaleanchor="x", scaleratio=1.5))
+        cities = (("Hamburg", 53.55, 10.0), ("Berlin", 52.52, 13.4), ("Cologne", 50.94, 6.96), ("Munich", 48.14, 11.58))
+        mfig.add_scatter(x=[c[2] for c in cities], y=[c[1] for c in cities], text=[c[0] for c in cities],
+                         mode="markers+text", textposition="middle right", hoverinfo="skip",
+                         marker=dict(size=6, color="#111"), textfont=dict(size=11, color="#111"))
+        mfig.update_layout(height=430, margin=dict(l=10, r=10, t=10, b=10), showlegend=False,
+                           xaxis=dict(dtick=1, ticksuffix="°E", showgrid=False),
+                           yaxis=dict(dtick=1, ticksuffix="°N", showgrid=False, scaleanchor="x", scaleratio=1.5),
+                           hoverlabel=dict(bgcolor="white", font_size=12))
         st.plotly_chart(mfig, width="stretch")
-        st.caption("Each square is a 1° grid cell. Red = rising, blue = falling. ★ = significant after false-discovery-rate correction.")
     with right:
         st.subheader("Why is it changing?")
         if len(att):
@@ -306,8 +339,10 @@ with tab_dash:
         st.dataframe(show.style.format({"Trend /decade": "{:+.3f}", "Trend p": "{:.3f}", f"Link to {metric}": "{:+.2f}",
                                         "Link p": "{:.3f}", "Trend × link": "{:+.2f}"}), hide_index=True, width="stretch")
         st.caption("A driver explains the trend only if it is changing significantly **and** linked to Dunkelflaute "
-                   "(year-to-year link measured on detrended series). ⚠️ Winter cloud cover jumps around 2004 with no trend before or after, "
-                   "which points to a change in the satellite cloud record rather than the weather; treat its trend with caution.")
+                   "(year-to-year link measured on detrended series). Sunlight and cloud come from two satellite records: GEWEX SRB up to 2000 "
+                   "and CERES from 2001. NASA advises against trend analysis across that switch, so the sun and cloud trends, and the sun "
+                   "driver effect, may partly reflect the change in source rather than the weather. Wind, temperature and pressure come "
+                   "from MERRA-2 throughout and are not affected.")
 
     # ---------------- events
     st.subheader("Event explorer")
