@@ -205,6 +205,8 @@ A season with no events would have count, longest event, total days and severity
 
 Every element on the Dashboard tab, top to bottom. "Measure" means the measure chosen in the sidebar. Results are at default settings (winter); full-year values in brackets where they differ.
 
+The line under the page title gives the data period (NASA POWER, 1984–2025) and the baseline (1984–2013), which sets the low-output cut-off and the "before" period in comparisons.
+
 ### Headline cards
 
 | Card | Value shown | Calculation | Subtext | Default result |
@@ -214,7 +216,7 @@ Every element on the Dashboard tab, top to bottom. "Measure" means the measure c
 | **Locations with a significant trend** | "*n* rising · *m* falling" | Number of the 80 grid location cells (1° squares) whose own trend in the measure is significant after false discovery rate (FDR) correction | "of 80 grid location cells (after FDR)" | 0 rising · 1 falling (full year: 0 rising · 2 falling) |
 | **Driver effects** | Each significant direct-driver effect, e.g. "Wind +1.1 · Sun −0.9"; "None" if neither is significant | Effect from step 9, in the measure's units per decade; shown only if significant after Holm correction | The measure, per decade | None (full year: Wind +1.1 · Sun −0.9) |
 
-**Season tag.** The purple tag (❄️ winter or 📅 year) in the first two card labels shows the current **Season** setting. The same tag appears under the Season control in the sidebar, and all copies change together.
+**Season tag.** The purple tag (winter or year) in the first two card labels shows the current **Season** setting. The same tag appears under the Season control in the sidebar, and all copies change together.
 
 **Colours.**
 
@@ -241,12 +243,17 @@ Every element on the Dashboard tab, top to bottom. "Measure" means the measure c
 
 ### Map: "Where is it changing?"
 
+A line under the heading names what is mapped, for example "Change in total Dunkelflaute days per decade, winter, at each of 80 grid location cells (1° squares)". It follows the Measure and Season settings.
+
 | Element | Meaning |
 | --- | --- |
-| Coloured square | One grid point (1° × 1°). Colour = Sen's slope per decade of the measure at that point; red rising, blue falling, white near zero |
-| ★ | The point's trend is significant after false discovery rate correction |
-| Hover text | Location, slope per decade and uncorrected p-value |
-| City labels | Hamburg, Berlin, Cologne, Munich, for orientation only |
+| Key: colour scale | Blue to red, labelled "Fewer", "No change" and "More", with the end values and units (for example days per decade) |
+| Key: ★ | Significant trend after false discovery rate (FDR) correction |
+| Key: black dot | City, for orientation |
+| Coloured square | One grid location cell (1° × 1°). Colour = Sen's slope per decade of the measure there |
+| ★ on a square | That cell's trend is significant after FDR correction |
+| City dot and name | Hamburg, Berlin, Cologne, Munich, for orientation only |
+| Hover on a square | Nearest city, coordinates, change per decade with units, p-value, and whether the cell is significant |
 
 ### Driver bars: "Why is it changing?"
 
@@ -276,6 +283,8 @@ One row per driver. Drivers are regional averages over the 80 points, then avera
 | Link to *measure* | Slope of a regression of the detrended measure on the detrended driver: how much the measure changes, in its own units, for a 1-unit rise in the driver, from year-to-year variation alone |
 | Link p | p-value of that regression slope |
 | Trend × link | Trend /decade × link: a rough estimate of the driver's contribution per decade, used for drivers without a counterfactual effect |
+
+The note under the table explains that sunlight and cloud come from two satellite records, GEWEX SRB up to 2000 and CERES from 2001. NASA advises against trend analysis across that switch, so the sun and cloud trends, and the sun driver effect, may partly reflect the change in source rather than the weather. Wind, temperature and pressure come from MERRA-2 throughout and are not affected.
 
 ### Event explorer
 
