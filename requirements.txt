@@ -1,0 +1,9 @@
+numpy
+pandas
+pyarrow
+scipy
+statsmodels
+pymannkendall
+plotly
+streamlit
+requests
