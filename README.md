@@ -46,13 +46,17 @@ All weather inputs are **daily** values from the [NASA POWER](https://power.larc
 
 **Grid:** latitudes 47.5° to 54.5°N and longitudes 6° to 15°E in 1° steps (8 × 10 points), covering Germany and parts of its neighbours. Each point takes the value of the NASA source grid cell it falls in.
 
-| Variable | POWER code | Unit | What it is | Source | Used for |
+**Links:** [POWER daily API documentation](https://power.larc.nasa.gov/docs/services/api/temporal/daily/) · [POWER data sources](https://power.larc.nasa.gov/docs/methodology/data/sources/) · [Example request](https://power.larc.nasa.gov/api/temporal/daily/point?parameters=WS50M,T2M,PS,ALLSKY_SFC_SW_DWN,CLOUD_AMT&community=RE&longitude=10&latitude=51.5&start=19840101&end=20251231&format=CSV): all five variables for the grid point at 51.5°N, 10°E, 1984–2025, as CSV. `scripts/fetch_data.py` requests the same data for every grid point.
+
+| Variable | POWER code | Unit | What it is | Original source | Used for |
 | --- | --- | --- | --- | --- | --- |
-| Wind speed at 50 m | `WS50M` | m/s | Daily mean wind speed 50 m above ground | MERRA-2 reanalysis | Wind power output; wind driver |
-| Surface solar irradiance | `ALLSKY_SFC_SW_DWN` | kWh/m²/day | Total sunlight reaching the ground in a day, including cloud effects | GEWEX SRB (earlier years), CERES SYN1deg (recent years) | Solar power output; sun driver |
-| Air temperature at 2 m | `T2M` | °C | Daily mean temperature | MERRA-2 | Temperature driver |
-| Surface pressure | `PS` | kPa | Daily mean air pressure at ground level | MERRA-2 | High-pressure days driver |
-| Cloud amount | `CLOUD_AMT` | % | Share of the sky covered by cloud | NASA satellite cloud products | Cloud driver |
+| Wind speed at 50 m | `WS50M` | m/s | Daily mean wind speed 50 m above ground. POWER calculates it from the MERRA-2 50 m wind components | MERRA-2 reanalysis, hourly single-level diagnostics ([M2T1NXSLV, doi:10.5067/VJAFPLI1CSIV](https://doi.org/10.5067/VJAFPLI1CSIV)), 1984–2025 | Wind power output; wind driver |
+| Surface solar irradiance | `ALLSKY_SFC_SW_DWN` | kWh/m²/day | Total sunlight reaching the ground in a day, including cloud effects | 1984–2000: [GEWEX SRB Release 4-IP, daily shortwave](https://asdc.larc.nasa.gov/project/SRB/GEWEXSRB_Rel4-IP_Shortwave_daily_utc_1); 2001–2025: [CERES SYN1deg Edition 4.1, daily](https://ceres.larc.nasa.gov/data/#syn1deg-level-3) | Solar power output; sun driver |
+| Air temperature at 2 m | `T2M` | °C | Daily mean temperature | MERRA-2 reanalysis, hourly single-level diagnostics ([M2T1NXSLV, doi:10.5067/VJAFPLI1CSIV](https://doi.org/10.5067/VJAFPLI1CSIV)), 1984–2025 | Temperature driver |
+| Surface pressure | `PS` | kPa | Daily mean air pressure at ground level | MERRA-2 reanalysis, hourly single-level diagnostics ([M2T1NXSLV, doi:10.5067/VJAFPLI1CSIV](https://doi.org/10.5067/VJAFPLI1CSIV)), 1984–2025 | High-pressure days driver |
+| Cloud amount | `CLOUD_AMT` | % | Share of the sky covered by cloud | 1984–2000: [GEWEX SRB Release 4-IP, daily shortwave](https://asdc.larc.nasa.gov/project/SRB/GEWEXSRB_Rel4-IP_Shortwave_daily_utc_1); 2001–2025: [CERES SYN1deg Edition 4.1, daily](https://ceres.larc.nasa.gov/data/#syn1deg-level-3) | Cloud driver |
+
+The sources were confirmed from the `sources` field that POWER returns with each request: `MERRA2` for wind, temperature and pressure throughout; `SRB` for sunlight and cloud up to 31 December 2000 and `SYN1DEG` from 1 January 2001. NASA advises against trend analysis across that change (see *Assumptions and limitations*).
 
 One further input, monthly:
 
@@ -360,7 +364,7 @@ How to read the statistics wherever they appear.
 | Fixed hypothetical fleet | Results describe what the weather allows, not the real German grid, which also depends on demand, imports, storage and backup plants |
 | Daily data | Hour-to-hour lulls are approximated by the assumed 25% spread; very short events may be missed or shortened |
 | One data source (NASA POWER) | No independent dataset (such as ERA5) has been compared yet |
-| Winter cloud cover jumps around 2004 | Most likely a change in the satellite cloud record. The cloud trend should not be interpreted; no other result depends on it |
+| Sunlight and cloud change source on 1 January 2001 | POWER switches from GEWEX SRB to CERES SYN1deg, and NASA advises against trend analysis across the switch. The sun and cloud driver trends, and the sun driver effect, may partly reflect the switch rather than the climate; the winter cloud jump in the early 2000s is probably the same issue. The Dunkelflaute measures include sunlight, so they could be affected slightly, least in winter when sunlight contributes little. Wind, temperature and pressure come from MERRA-2 throughout and are not affected |
 | Rectangular region | The grid includes parts of neighbouring countries and the North and Baltic Seas |
 | 42 years of data | Rare, long events are few, so trends in the longest event are noisy; event count and total days carry the main verdict |
 | Driver effects are approximate | The effect assumes the trend can be removed by rescaling each season. The wind effect rests on a borderline wind trend (p = 0.07) |
