@@ -2,7 +2,7 @@
 
 NASA Space Apps Challenge 2026 · *Be An Earth System Trend Detective!*
 
-## In one minute
+## Executive Summary
 
 **Dunkelflaute** is German for "dark doldrums": days when there is very little wind *and* very little sun, so wind turbines and solar panels both produce almost nothing. Power grids that rely on renewables must cover these spells some other way.
 
