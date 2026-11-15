@@ -199,7 +199,7 @@ with tab_dash:
             st.plotly_chart(bfig, width="stretch")
             st.caption("Each bar = how much that driver's long-term change has added to (+) or removed from (−) the Dunkelflaute trend, "
                        "found by re-running history with the driver's trend taken out. Line = 95% bootstrap range; blue = significant "
-                       "(Holm-corrected). Drivers can cancel each other out, so we show amounts, not percentages.")
+                       "(Holm-corrected). Ranges include uncertainty in the driver's own trend. Drivers can cancel each other out, so we show amounts, not percentages.")
         show = drv_tab[["label", "unit", "trend_decade", "trend_p", "sens_slope", "sens_p", "implied_contribution_decade"]].copy()
         show.columns = ["Driver", "Unit", "Trend /decade", "Trend p", f"Link to {metric}", "Link p", "Trend × link"]
         st.dataframe(show.style.format({"Trend /decade": "{:+.3f}", "Trend p": "{:.3f}", f"Link to {metric}": "{:+.2f}",
@@ -293,7 +293,7 @@ with tab_method:
 - **Statistics:** Mann-Kendall with Hamed-Rao autocorrelation correction; Sen's slope with 95% CI; Mann-Whitney recent vs baseline;
   Poisson regression on counts; Pettitt change-point; Benjamini-Hochberg FDR across cells.
 - **Attribution:** counterfactual runs with each direct driver's long-term trend removed (same threshold); moving-block bootstrap
-  (5-year blocks, 1,000 resamples, paired) for 95% ranges; Holm correction across drivers. Indirect drivers: trend × detrended sensitivity.
+  (5-year blocks, 1,000 resamples, paired, re-estimating the driver's trend each time) for 95% ranges; Holm correction across drivers. Indirect drivers: trend × detrended sensitivity.
 - **Limitations:** daily data smooths hour-to-hour swings; a single reanalysis; a fixed hypothetical fleet rather than the real one.
 """)
     st.markdown("Code: [github.com/asakti47/dunkelflaute-explorer](https://github.com/asakti47/dunkelflaute-explorer)")
