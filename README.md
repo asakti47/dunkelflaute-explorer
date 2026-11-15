@@ -22,6 +22,9 @@ Is *Dunkelflaute* (German for "dark doldrums": long spells with little wind **an
 
 ## Run it
 
+For Windows with VS Code and a project-local virtual environment, follow the
+[Windows setup guide](docs/windows-vscode-setup.md).
+
 ```bash
 pip install -r requirements.txt
 streamlit run streamlit_app.py          # dashboard (data are in data/)

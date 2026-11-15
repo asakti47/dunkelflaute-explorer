@@ -1,0 +1,6 @@
+# Project-local Python environment and generated files
+.venv/
+__pycache__/
+.pytest_cache/
+data/power_*.csv.gz
+results/
