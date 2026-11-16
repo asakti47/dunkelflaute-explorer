@@ -8,7 +8,7 @@ NASA Space Apps Challenge 2026 · *Be An Earth System Trend Detective!*
 
 The Dunkelflaute Explorer answers three questions for Germany and its surroundings, using NASA data from 1984 to 2025:
 
-1. **Is it changing?** Are these spells becoming more frequent or longer?
+1. **Is it changing?** Are these spells becoming more frequent, longer, or more severe?
 2. **Where?** Is the change the same everywhere, or different from region to region?
 3. **Why?** Which weather ingredients (wind, sunlight, and so on) are behind the change?
 
