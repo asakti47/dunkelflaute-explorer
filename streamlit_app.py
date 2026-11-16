@@ -486,4 +486,4 @@ or <b>removed from</b> (bar to the left) {mname_w}, in {unit} per decade.<br><b>
         f"{up} of {len(cells)} grid cells show a significant rise and {down} a significant fall."
     )
 
-st.caption("Built with AI assistance (Claude, Anthropic).")
+st.caption("Built with AI assistance (Claude)")
