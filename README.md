@@ -216,7 +216,7 @@ The line under the page title gives the data period (NASA POWER, 1984–2025) an
 | **Locations with a significant trend** | "*n* rising · *m* falling" | Number of the 80 grid location cells (1° squares) whose own trend in the measure is significant after false discovery rate (FDR) correction | "of 80 grid location cells (after FDR)", then "Hover for locations" | 0 rising · 1 falling (full year: 0 rising · 2 falling) |
 | **Driver effects** | Each significant direct-driver effect, e.g. "Wind +1.1 · Sun −0.9"; "None" if neither is significant | Effect from step 9, in the measure's units per decade; shown only if significant after Holm correction | The measure, per decade | None (full year: Wind +1.1 · Sun −0.9) |
 
-**Layout.** All four cards share one template, five rows in the same order and style: label, value, units, a grey context line, and a tag line. The rows line up across the cards; a row a card does not use is left blank. On narrow screens the cards sit two by two.
+**Layout.** All four cards share one template, six rows in the same order and style: bold title, description, value, units, a grey context line, and a tag line. The rows line up across the cards, so all four titles and all four values sit at the same height; a row a card does not use is left blank. The value text is the same size on every card; "rising" and "falling" on card 3 are semi-bold. On narrow screens the cards sit two by two.
 
 **Season tag.** The purple tag (winter or year) in the first two card labels shows the current **Season** setting. The same tag appears under the Season control in the sidebar, and all copies change together.
 
