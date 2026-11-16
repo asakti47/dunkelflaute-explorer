@@ -125,6 +125,7 @@ def card(label: str, value: str, sub: str, hover: str | None = None, small: bool
 
 CARD_CSS = f"""
 <style>
+[role="tab"][aria-selected="true"] p {{font-weight: 700;}}
 .dfx-card {{position: relative; padding: 0.2rem 0 0.6rem 0;}}
 .dfx-hover {{cursor: help;}}
 .dfx-label {{font-size: 0.875rem; line-height: 1.35; opacity: 0.85; margin-bottom: 0.15rem;}}
@@ -202,7 +203,7 @@ st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* li
             f"**Data:** NASA POWER, 1984–2025 · **Baseline:** {config.BASELINE[0]}–{config.BASELINE[1]}, which sets the low-output "
             "cut-off and the 'before' period in comparisons")
 
-tab_dash, tab_defs, tab_method = st.tabs(["Dashboard", "Definitions", "Method & data"])
+tab_dash, tab_defs, tab_method = st.tabs(["Dashboard", "Definitions", "Method & Data"])
 
 with tab_dash:
     # ---------------- verdict cards

@@ -303,7 +303,7 @@ A generated paragraph restating the frequency and length trends with their p-val
 
 ### Other tabs
 
-**Definitions** (plain-language terms) and **Method & data** (a short technical summary). These are static text and do not change with the settings.
+**Definitions** (plain-language terms) and **Method & Data** (a short technical summary). These are static text and do not change with the settings.
 
 ## Outputs: statistical terms
 
