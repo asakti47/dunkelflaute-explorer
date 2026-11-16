@@ -280,8 +280,9 @@ with tab_dash:
     base = config.BASELINE
     fig.add_vrect(x0=base[0] - 0.5, x1=base[1] + 0.5, fillcolor=GREY, opacity=0.08, line_width=0,
                   annotation_text="baseline", annotation_position="top left")
-    fig.update_layout(height=380, margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", y=-0.15),
-                      yaxis_title=METRIC_LABELS[metric], xaxis_title=None)
+    xt = "Winter (Nov–Feb, labelled by its January year)" if season == "winter" else "Year"
+    fig.update_layout(height=410, margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", y=-0.28),
+                      yaxis_title=METRIC_LABELS[metric], xaxis_title=xt)
     st.plotly_chart(fig, width="stretch")
     st.caption(f"Recent ({config.RECENT[0]}–{config.RECENT[1]}) average {pc['recent_mean']:.2f} vs baseline {pc['baseline_mean']:.2f} "
                f"(ratio {pc['ratio']:.2f}, Mann-Whitney {fmt_p(pc['p_mannwhitney'])}). "
@@ -324,8 +325,8 @@ with tab_dash:
                          mode="markers+text", textposition="middle right", hoverinfo="skip",
                          marker=dict(size=6, color="#111"), textfont=dict(size=11, color="#111"))
         mfig.update_layout(height=430, margin=dict(l=10, r=10, t=10, b=10), showlegend=False,
-                           xaxis=dict(dtick=1, ticksuffix="°E", showgrid=False),
-                           yaxis=dict(dtick=1, ticksuffix="°N", showgrid=False, scaleanchor="x", scaleratio=1.5),
+                           xaxis=dict(dtick=1, ticksuffix="°E", showgrid=False, title="Longitude"),
+                           yaxis=dict(dtick=1, ticksuffix="°N", showgrid=False, scaleanchor="x", scaleratio=1.5, title="Latitude"),
                            hoverlabel=dict(bgcolor="white", font_size=12))
         st.plotly_chart(mfig, width="stretch")
     with right:
@@ -361,7 +362,8 @@ with tab_dash:
         efig = go.Figure(go.Scatter(x=evs["start"], y=evs["length"], mode="markers",
                                     marker=dict(size=6 + evs["severity"] / evs["severity"].max() * 18, color=BLUE, opacity=0.6),
                                     text=[f"{s:%d %b %Y}: {n} days" for s, n in zip(evs["start"], evs["length"])], hoverinfo="text"))
-        efig.update_layout(height=260, margin=dict(l=10, r=10, t=10, b=10), yaxis_title="Length (days)")
+        efig.update_layout(height=290, margin=dict(l=10, r=10, t=10, b=10),
+                           xaxis_title="Year (event start date)", yaxis_title="Dunkelflaute event length (days)")
         st.plotly_chart(efig, width="stretch")
         choices = evs.sort_values("severity", ascending=False).head(25)
     if len(ev) and len(choices):
