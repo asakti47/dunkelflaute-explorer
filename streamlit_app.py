@@ -103,6 +103,47 @@ def place_name(lat: float, lon: float) -> str:
     return f"near {best[0]}" if best[1] <= 40 else f"{round(best[1], -1):.0f} km from {best[0]}"
 
 
+SRC = {
+    "power": "https://power.larc.nasa.gov/docs/methodology/data/sources/",
+    "merra2": "https://doi.org/10.5067/VJAFPLI1CSIV",
+    "srb": "https://asdc.larc.nasa.gov/project/SRB/GEWEXSRB_Rel4-IP_Shortwave_daily_utc_1",
+    "ceres": "https://ceres.larc.nasa.gov/data/#syn1deg-level-3",
+    "nao": "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii",
+}
+
+
+def _a(text: str, key: str) -> str:
+    return f'<a href="{SRC[key]}" target="_blank">{text}</a>'
+
+
+DRIVER_NOTES = {
+    "wind_hub": ("Average daily wind speed, scaled from 50 m to turbine height (100 m).",
+                 f"{_a('NASA POWER', 'power')} (WS50M), from the {_a('MERRA-2', 'merra2')} reanalysis, 1984–2025."),
+    "ghi": ("Total sunlight reaching the ground per day.",
+            f"{_a('NASA POWER', 'power')} (ALLSKY_SFC_SW_DWN), from the {_a('GEWEX SRB', 'srb')} satellite record to 2000 "
+            f"and {_a('CERES SYN1deg', 'ceres')} from 2001."),
+    "cloud": ("Share of the sky covered by cloud.",
+              f"{_a('NASA POWER', 'power')} (CLOUD_AMT), from {_a('GEWEX SRB', 'srb')} to 2000 and "
+              f"{_a('CERES SYN1deg', 'ceres')} from 2001."),
+    "high_pressure_days": ("Number of days per season when regional average surface pressure is more than one standard deviation "
+                           "(8.2 hPa) above its normal for that date. Normal = the 1984–2013 average for that day of the year, "
+                           "smoothed over 31 days. The standard deviation is of all daily departures from normal in 1984–2013. "
+                           "About 14% of days qualify.",
+                           f"{_a('NASA POWER', 'power')} surface pressure (PS), from {_a('MERRA-2', 'merra2')}."),
+    "t2m": ("Average air temperature 2 m above the ground.",
+            f"{_a('NASA POWER', 'power')} (T2M), from {_a('MERRA-2', 'merra2')}."),
+    "nao": ("North Atlantic Oscillation: the standardised pressure difference between Iceland and the Azores, "
+            "which steers Europe's winter winds.",
+            f"{_a('NOAA Climate Prediction Center', 'nao')}, monthly index."),
+}
+
+
+def info(text: str, right: bool = False) -> str:
+    """Small circled 'i' that shows a note on hover."""
+    side = " dfx-itip-r" if right else ""
+    return f'<span class="dfx-info">i<span class="dfx-itip{side}"><span class="dfx-itip-box">{text}</span></span></span>'
+
+
 def season_tag(season: str) -> str:
     text = "winter" if season == "winter" else "year"
     return f'<span class="dfx-season">{text}</span>'
@@ -166,6 +207,29 @@ CARD_CSS = f"""
 .dfx-key-unit {{font-size: 0.74rem; opacity: 0.7; text-align: center;}}
 .dfx-key-sym {{font-size: 1.15rem; line-height: 1;}}
 .dfx-key-dot {{display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #111;}}
+.dfx-info {{position: relative; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px;
+  margin-left: 4px; border: 1px solid currentColor; border-radius: 50%; font-size: 9.5px; font-weight: 700; font-style: normal;
+  line-height: 1; opacity: 0.55; cursor: help; vertical-align: 1px;}}
+.dfx-info:hover {{opacity: 1;}}
+.dfx-itip {{display: none; position: absolute; top: 100%; left: -8px; z-index: 1000; width: 280px; padding: 8px 0 0 0;
+  font-size: 0.78rem; font-weight: 400; line-height: 1.45; text-align: left; white-space: normal; opacity: 1;}}
+.dfx-itip > span, .dfx-itip-in {{display: block;}}
+.dfx-itip::before {{content: ""; display: none;}}
+.dfx-info:hover .dfx-itip {{display: block;}}
+.dfx-itip-r {{left: auto; right: -8px;}}
+.dfx-itip-box {{display: block; background: #ffffff; color: #262730; border: 1px solid rgba(49,51,63,0.2); border-radius: 0.5rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15); padding: 0.6rem 0.75rem;}}
+.dfx-itip-box b {{font-weight: 600;}}
+.dfx-itip-box a {{color: #2a6fdb;}}
+.dfx-dt {{width: 100%; border-collapse: collapse; font-size: 0.82rem; margin: 0.4rem 0 0.6rem 0;}}
+.dfx-dt th {{text-align: right; font-weight: 600; padding: 0.4rem 0.45rem; border-bottom: 1px solid rgba(49,51,63,0.2);
+  vertical-align: bottom; line-height: 1.3;}}
+.dfx-dt td {{text-align: right; padding: 0.4rem 0.45rem; border-bottom: 1px solid rgba(49,51,63,0.08); font-variant-numeric: tabular-nums;}}
+.dfx-dt th:first-child, .dfx-dt td:first-child, .dfx-dt th:nth-child(2), .dfx-dt td:nth-child(2) {{text-align: left;}}
+.dfx-dt td:first-child {{white-space: nowrap;}}
+.dfx-steps {{font-size: 0.85rem; line-height: 1.5; opacity: 0.85; margin: 0.2rem 0 0.8rem 0;}}
+.dfx-steps ol {{margin: 0.25rem 0 0.35rem 1.2rem; padding: 0;}}
+.dfx-steps li {{margin: 0.1rem 0;}}
 .dfx-tip ul {{margin: 0.35rem 0 0.4rem 1.1rem; padding: 0;}}
 .dfx-tip li {{margin: 0.1rem 0;}}
 .dfx-tip .dfx-foot {{opacity: 0.7; font-size: 0.76rem; margin-top: 0.3rem;}}
@@ -331,6 +395,7 @@ with tab_dash:
         st.plotly_chart(mfig, width="stretch")
     with right:
         st.subheader("Why is it changing?")
+        mname_w = measure[0].lower() + measure[1:]
         if len(att):
             bfig = go.Figure()
             bfig.add_bar(y=[DRIVER_LABELS[k][0] for k in att.index], x=att["reduction_decade"], orientation="h",
@@ -342,18 +407,36 @@ with tab_dash:
             bfig.update_layout(height=200, margin=dict(l=10, r=10, t=10, b=10),
                                xaxis_title=f"Trend explained ({METRIC_LABELS[metric].split('(')[-1].rstrip(')')} per decade)")
             st.plotly_chart(bfig, width="stretch")
-            st.caption("Each bar = how much that driver's long-term change has added to (+) or removed from (−) the Dunkelflaute trend, "
-                       "found by re-running history with the driver's trend taken out. Line = 95% bootstrap range; blue = significant "
-                       "(Holm-corrected). Ranges include uncertainty in the driver's own trend. Drivers can cancel each other out, so we show amounts, not percentages.")
-        show = drv_tab[["label", "unit", "trend_decade", "trend_p", "sens_slope", "sens_p", "implied_contribution_decade"]].copy()
-        show.columns = ["Driver", "Unit", "Trend /decade", "Trend p", f"Link to {metric}", "Link p", "Trend × link"]
-        st.dataframe(show.style.format({"Trend /decade": "{:+.3f}", "Trend p": "{:.3f}", f"Link to {metric}": "{:+.2f}",
-                                        "Link p": "{:.3f}", "Trend × link": "{:+.2f}"}), hide_index=True, width="stretch")
-        st.caption("A driver explains the trend only if it is changing significantly **and** linked to Dunkelflaute "
-                   "(year-to-year link measured on detrended series). Sunlight and cloud come from two satellite records: GEWEX SRB up to 2000 "
-                   "and CERES from 2001. NASA advises against trend analysis across that switch, so the sun and cloud trends, and the sun "
-                   "driver effect, may partly reflect the change in source rather than the weather. Wind, temperature and pressure come "
-                   "from MERRA-2 throughout and are not affected.")
+            st.markdown(f"""<div class="dfx-steps">Each bar shows how much a driver's long-term trend has <b>added to</b> (bar to the right)
+or <b>removed from</b> (bar to the left) {mname_w}, in {unit} per decade.<br><b>How it's calculated:</b>
+<ol>
+<li>Fit a straight-line trend through the driver's yearly averages, 1984–2025.</li>
+<li>Rescale every day of each year by one factor, so those yearly averages sit on a flat line. Day-to-day and year-to-year weather is unchanged; only the trend is removed.</li>
+<li>Re-run the model on the rescaled data, then compare its Dunkelflaute trend with the actual trend. The difference is the bar.</li>
+<li>The line through each bar is the 95% range from 1,000 bootstrap re-runs, which resample the years in 5-year blocks and re-fit the driver's trend each time.</li>
+</ol>Blue bars are statistically significant; grey bars are not.</div>""", unsafe_allow_html=True)
+        keys = drv_tab["driver"] if "driver" in drv_tab.columns else drv_tab.index
+        link_name = f"Link to {mname_w}" if mname_w.startswith(("total", "dunkel")) else f"Link to Dunkelflaute {mname_w}"
+        heads = [
+            ("Driver", None), ("Unit", None),
+            ("Trend /decade", "How much the driver itself changed per decade, in its own units (Sen's slope)."),
+            ("Trend p", "The chance of a trend this strong if the driver hadn't really changed. Below 0.05 = significant."),
+            (link_name, f"In years when the driver was 1 unit higher than usual, how much {mname_w} rose (+) or fell (−), "
+                        f"in {unit}. Long-term trends are removed from both first, so this measures year-to-year swings only."),
+            ("Link p", "Whether that link could be chance. Below 0.05 = a real link."),
+            ("Trend × link", f"Rough estimate of how much the driver's change accounts for in {mname_w}, in {unit} per decade: "
+                             "trend × link."),
+        ]
+        th = "".join(f"<th>{h}{info(t, right=i >= 4) if t else ''}</th>" for i, (h, t) in enumerate(heads))
+        rows = []
+        for k, r in zip(keys, drv_tab.itertuples()):
+            desc, src = DRIVER_NOTES.get(k, ("", ""))
+            note = f"{desc}<br><br><b>Source:</b> {src}" if desc else ""
+            rows.append(f"<tr><td>{r.label}{info(note) if note else ''}</td><td>{r.unit}</td>"
+                        f"<td>{r.trend_decade:+.3f}</td><td>{r.trend_p:.3f}</td><td>{r.sens_slope:+.2f}</td>"
+                        f"<td>{r.sens_p:.3f}</td><td>{r.implied_contribution_decade:+.2f}</td></tr>")
+        st.markdown(f'<table class="dfx-dt"><thead><tr>{th}</tr></thead><tbody>{"".join(rows)}</tbody></table>',
+                    unsafe_allow_html=True)
 
     # ---------------- events
     st.subheader("Event explorer")
