@@ -262,32 +262,39 @@ A line under the heading names what is mapped, for example "Change in total Dunk
 
 | Element | Meaning |
 | --- | --- |
-| Bar length | Driver effect (step 9) in the measure's units per decade. Positive = the driver's long-term change added to the measure; negative = it reduced it |
-| Line through the bar | 95% bootstrap range of the effect |
-| Bar colour | Blue = significant after Holm correction; grey = not significant |
+| Bar length | How much the driver's long-term trend has added to (bar to the right) or removed from (bar to the left) the measure, in its units per decade |
+| Line through the bar | 95% range from 1,000 bootstrap re-runs |
+| Bar colour | Blue = statistically significant (Holm correction across the two drivers); grey = not significant |
+
+The text under the chart gives the calculation in four steps:
+
+1. Fit a straight-line trend through the driver's yearly averages, 1984–2025.
+2. Rescale every day of each year by one factor, so those yearly averages sit on a flat line. Day-to-day and year-to-year weather is unchanged; only the trend is removed.
+3. Re-run the model on the rescaled data, then compare its Dunkelflaute trend with the actual trend. The difference is the bar.
+4. The line through each bar is the 95% range from 1,000 bootstrap re-runs, which resample the years in 5-year blocks and re-fit the driver's trend each time.
+
+Drivers can push in opposite directions and cancel out, so the bars are amounts, not percentages of the total trend.
 
 ### Driver table
 
-One row per driver. Drivers are regional averages over the 80 points, then averaged (or, for high-pressure days, counted) over each season.
+One row per driver. Drivers are regional averages over the 80 points, then averaged (or, for high-pressure days, counted) over each season. A circled **i** next to each driver and column heading shows a description on hover; for drivers it also gives the source, with links.
 
-| Driver | Unit | Definition |
-| --- | --- | --- |
-| Wind speed at 100 m | m/s | 50 m wind scaled to 100 m (step 1), seasonal mean |
-| Surface solar irradiance | kWh/m²/day | Daily sunlight, seasonal mean |
-| Cloud cover | % | Seasonal mean cloud amount |
-| High-pressure days | days | Days per season meeting the high-pressure definition (fixed assumptions) |
-| Temperature (2 m) | °C | Seasonal mean temperature |
-| NAO index | index | Seasonal mean of the monthly NAO |
+| Driver | Unit | Description (hover note) | Source |
+| --- | --- | --- | --- |
+| Wind speed at 100 m | m/s | Average daily wind speed, scaled from 50 m to turbine height (100 m) | NASA POWER (WS50M), from MERRA-2, 1984–2025 |
+| Surface solar irradiance | kWh/m²/day | Total sunlight reaching the ground per day | NASA POWER (ALLSKY_SFC_SW_DWN), from GEWEX SRB to 2000 and CERES SYN1deg from 2001 |
+| Cloud cover | % | Share of the sky covered by cloud | NASA POWER (CLOUD_AMT), from GEWEX SRB to 2000 and CERES SYN1deg from 2001 |
+| High-pressure days | days | Days per season when regional average surface pressure is more than one standard deviation (8.2 hPa) above its normal for that date. Normal = the 1984–2013 average for that day of the year, smoothed over 31 days; the standard deviation is of all daily departures from normal in 1984–2013. About 14% of days qualify | NASA POWER surface pressure (PS), from MERRA-2 |
+| Temperature (2 m) | °C | Average air temperature 2 m above the ground | NASA POWER (T2M), from MERRA-2 |
+| NAO index | index | North Atlantic Oscillation: the standardised pressure difference between Iceland and the Azores, which steers Europe's winter winds | NOAA Climate Prediction Center, monthly index |
 
-| Column | Meaning |
+| Column | Hover note |
 | --- | --- |
-| Trend /decade | Sen's slope of the driver's seasonal series × 10 |
-| Trend p | Mann-Kendall p-value of that trend |
-| Link to *measure* | Slope of a regression of the detrended measure on the detrended driver: how much the measure changes, in its own units, for a 1-unit rise in the driver, from year-to-year variation alone |
-| Link p | p-value of that regression slope |
-| Trend × link | Trend /decade × link: a rough estimate of the driver's contribution per decade, used for drivers without a counterfactual effect |
-
-The note under the table explains that sunlight and cloud come from two satellite records, GEWEX SRB up to 2000 and CERES from 2001. NASA advises against trend analysis across that switch, so the sun and cloud trends, and the sun driver effect, may partly reflect the change in source rather than the weather. Wind, temperature and pressure come from MERRA-2 throughout and are not affected.
+| Trend /decade | How much the driver itself changed per decade, in its own units (Sen's slope) |
+| Trend p | The chance of a trend this strong if the driver hadn't really changed. Below 0.05 = significant (Mann-Kendall test) |
+| Link to *measure* (for example "Link to total Dunkelflaute days") | In years when the driver was 1 unit higher than usual, how much the measure rose (+) or fell (−), in its units. Long-term trends are removed from both first, so this measures year-to-year swings only |
+| Link p | Whether that link could be chance. Below 0.05 = a real link |
+| Trend × link | Rough estimate of how much the driver's change accounts for in the measure, in its units per decade: trend × link |
 
 ### Event explorer
 
