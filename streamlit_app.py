@@ -175,7 +175,7 @@ if st.sidebar.button("Reset to default settings"):
         del st.session_state[k]
 season = st.sidebar.radio("Season", ["winter", "year"], format_func=lambda s: "Winter (Nov–Feb)" if s == "winter" else "Full year",
                           key="season", help="Dunkelflaute is mostly a winter problem: short days, low sun, calm high-pressure spells.")
-st.sidebar.markdown(CARD_CSS + f'<div style="font-size:0.85rem;margin:-0.4rem 0 0.4rem 0">Shown on the cards as {season_tag(season)}</div>',
+st.sidebar.markdown(f'<div style="font-size:0.85rem;margin:-0.4rem 0 0.4rem 0">Shown on the cards as {season_tag(season)}</div>',
                     unsafe_allow_html=True)
 metric = st.sidebar.selectbox("Measure", list(METRIC_LABELS), index=3, format_func=METRIC_LABELS.get, key="metric")
 thr = st.sidebar.slider("Low-output threshold (percentile of baseline days)", 5, 25, 10, 5, key="thr",
@@ -198,6 +198,7 @@ t_len = stats.trend(m["mean_len"])
 pc = stats.period_compare(y)
 
 # ------------------------------------------------------------------ header
+st.html(CARD_CSS)  # page-wide styles; placed in the main area so they load even when the sidebar is collapsed
 st.title("Dunkelflaute Explorer")
 st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* little sun — getting more frequent or longer over {config.REGION_NAME}, and why?**  \n"
             f"**Data:** NASA POWER, 1984–2025 · **Baseline:** {config.BASELINE[0]}–{config.BASELINE[1]}, which sets the low-output "
