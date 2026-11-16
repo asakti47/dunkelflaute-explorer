@@ -1,6 +1,10 @@
 """Dunkelflaute Explorer - NASA Space Apps 2026, Be An Earth System Trend Detective!
 
 Run locally with:  streamlit run streamlit_app.py
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
 """
 from __future__ import annotations
 
@@ -13,6 +17,10 @@ import streamlit as st
 
 from dfx import analysis, config, events, stats
 from dfx.panel import DRIVER_LABELS, Panel, detrend_factor
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 st.set_page_config(page_title="Dunkelflaute Explorer", page_icon="🌥️", layout="wide")
 
@@ -477,3 +485,5 @@ or <b>removed from</b> (bar to the left) {mname_w}, in {unit} per decade.<br><b>
         f"For {METRIC_LABELS[metric].lower()}, the recent period averages {pc['recent_mean']:.2f} versus {pc['baseline_mean']:.2f} in {base[0]}–{base[1]}. "
         f"{up} of {len(cells)} grid cells show a significant rise and {down} a significant fall."
     )
+
+st.caption("Built with AI assistance (Claude, Anthropic).")

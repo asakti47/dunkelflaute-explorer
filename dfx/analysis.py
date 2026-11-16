@@ -1,4 +1,9 @@
-"""End-to-end analysis used by both the batch script and the dashboard."""
+"""End-to-end analysis used by both the batch script and the dashboard.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -9,6 +14,10 @@ import pandas as pd
 
 from . import config, events, stats
 from .panel import DIRECT_DRIVERS, DRIVER_LABELS, Panel, detrend_factor
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 

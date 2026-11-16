@@ -1,9 +1,18 @@
-"""Unit tests on hand-made inputs. Synthetic data here only checks the code, never the findings."""
+"""Unit tests on hand-made inputs. Synthetic data here only checks the code, never the findings.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 import numpy as np
 import pandas as pd
 
 from dfx import capacity, config, events, stats
 from dfx.panel import Panel
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 
 def test_power_curve_bounds():

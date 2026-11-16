@@ -2,6 +2,10 @@
 
 The same turbine and the same solar panel are applied to every day from 1984 to 2025, so any trend
 in the result comes from the weather, not from changes in the real power fleet.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
 """
 from __future__ import annotations
 
@@ -11,6 +15,10 @@ import numpy as np
 
 from . import config
 from .config import Turbine
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 _Z = np.linspace(-2.5, 2.5, 51)                  # standard-normal grid for intra-day spread
 _W = np.exp(-0.5 * _Z ** 2)

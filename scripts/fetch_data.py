@@ -1,4 +1,9 @@
-"""Download NASA POWER daily data for the study grid and the NOAA monthly NAO index into data/."""
+"""Download NASA POWER daily data for the study grid and the NOAA monthly NAO index into data/.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 import sys
 from io import StringIO
 from pathlib import Path
@@ -8,6 +13,10 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dfx import config, power_api  # noqa: E402
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 NAO_URL = "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii"

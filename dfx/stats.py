@@ -1,4 +1,9 @@
-"""Trend tests, period comparison, attribution and the bootstrap."""
+"""Trend tests, period comparison, attribution and the bootstrap.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 from __future__ import annotations
 
 import numpy as np
@@ -8,6 +13,10 @@ import statsmodels.api as sm
 from scipy import stats
 
 from . import config
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 
 def _clean(y: pd.Series) -> pd.Series:

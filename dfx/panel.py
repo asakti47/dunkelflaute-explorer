@@ -1,4 +1,9 @@
-"""Load the gridded daily data and build regional series: capacity factors, drivers, counterfactuals."""
+"""Load the gridded daily data and build regional series: capacity factors, drivers, counterfactuals.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,6 +12,10 @@ import numpy as np
 import pandas as pd
 
 from . import capacity, config, events
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 DATA = Path(__file__).resolve().parent.parent / "data"
 VARS = list(config.POWER_PARAMS.values())

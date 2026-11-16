@@ -1,4 +1,9 @@
-"""Run the full analysis on the downloaded data and write tables to results/."""
+"""Run the full analysis on the downloaded data and write tables to results/.
+
+AI disclosure: this file was generated with the assistance of Claude (Anthropic), a generative AI
+model, as part of the Dunkelflaute Explorer for NASA Space Apps 2026. The team directed the work and
+reviewed and tested the code.
+"""
 import json
 import sys
 from pathlib import Path
@@ -6,6 +11,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dfx import analysis, config, events  # noqa: E402
 from dfx.panel import Panel  # noqa: E402
+
+__ai_generated__ = True
+__ai_tool__ = "Claude (Anthropic)"
+__ai_disclosure__ = "Code generated with AI assistance; directed, reviewed and tested by the team."
 
 OUT = Path(__file__).resolve().parent.parent / "results"
 
