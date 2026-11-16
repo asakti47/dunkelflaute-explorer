@@ -2,7 +2,7 @@
 
 NASA Space Apps Challenge 2026 · *Be An Earth System Trend Detective!*
 
-## Executive Summary
+## Overview
 
 **Dunkelflaute** is German for "dark doldrums": days when there is very little wind *and* very little sun, so wind turbines and solar panels both produce almost nothing. Power grids that rely on renewables must cover these spells some other way.
 
@@ -11,13 +11,6 @@ The Dunkelflaute Explorer answers three questions for Germany and its surroundin
 1. **Is it changing?** Are these spells becoming more frequent or longer?
 2. **Where?** Is the change the same everywhere, or different from region to region?
 3. **Why?** Which weather ingredients (wind, sunlight, and so on) are behind the change?
-
-**What it found:**
-
-- **No significant change overall.** Dunkelflaute has not become more frequent or longer since 1984. Winters averaged about 18 Dunkelflaute days in 1984–2013 and 16 in 2014–2025, a difference that could easily be chance.
-- **Extremes still happen.** The worst spell in the 42-year record was 4–13 November 2024.
-- **Two forces cancel out.** Skies have become sunnier (fewer Dunkelflaute days), while winds may have weakened slightly (more days). The two roughly offset each other, so the total barely moves.
-- **Regions differ.** Western Germany leans towards fewer Dunkelflaute days, the east towards more, though most individual locations are not significant on their own.
 
 ## Quick start
 
@@ -44,7 +37,7 @@ On first run the app rebuilds the data files in `data/` from the stored parts; t
 
 All weather inputs are **daily** values from the [NASA POWER](https://power.larc.nasa.gov) API (Renewable Energy community), **1 January 1984 to 31 December 2025** (15,341 days), at **80 grid points**.
 
-**Grid:** latitudes 47.5° to 54.5°N and longitudes 6° to 15°E in 1° steps (8 × 10 points), covering Germany and parts of its neighbours. Each point takes the value of the NASA source grid cell it falls in.
+**Grid:** latitudes 47.5° to 54.5°N and longitudes 6° to 15°E in 1° steps (8 × 10 points), covering Germany and parts of its neighbors. Each point takes the value of the NASA source grid cell it falls in.
 
 **Links:** [POWER daily API documentation](https://power.larc.nasa.gov/docs/services/api/temporal/daily/) · [POWER data sources](https://power.larc.nasa.gov/docs/methodology/data/sources/) · [Example request](https://power.larc.nasa.gov/api/temporal/daily/point?parameters=WS50M,T2M,PS,ALLSKY_SFC_SW_DWN,CLOUD_AMT&community=RE&longitude=10&latitude=51.5&start=19840101&end=20251231&format=CSV): all five variables for the grid point at 51.5°N, 10°E, 1984–2025, as CSV. `scripts/fetch_data.py` requests the same data for every grid point.
 
