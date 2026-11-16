@@ -196,9 +196,9 @@ A season with no events would have count, longest event, total days and severity
 
 ## Outputs: dashboard
 
-Every element on the Dashboard tab, top to bottom. "Measure" means the measure chosen in the sidebar. Results are at default settings (winter); full-year values in brackets where they differ.
+Every element on the dashboard, top to bottom. "Measure" means the measure chosen in the sidebar. Results are at default settings (winter); full-year values in brackets where they differ.
 
-The line under the page title gives the data period (NASA POWER, 1984–2025) and the baseline (1984–2013), which sets the low-output cut-off and the "before" period in comparisons.
+The lines under the page title give the baseline (1984–2013), which sets the low-output cut-off and the "before" period in comparisons, and a link to this GitHub repository for the methodology, data sources and usage, assumptions and limitations, and the full code.
 
 ### Headline cards
 
@@ -303,10 +303,6 @@ One row per driver. Drivers are regional averages over the 80 points, then avera
 ### Findings summary
 
 A generated paragraph restating the frequency and length trends with their p-values, the recent vs baseline averages of the measure, and the count of significant grid points, for the current settings.
-
-### Other tabs
-
-**Definitions** (plain-language terms) and **Method & Data** (a short technical summary). These are static text and do not change with the settings.
 
 ## Outputs: statistical terms
 
