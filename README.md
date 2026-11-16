@@ -235,7 +235,7 @@ The line under the page title gives the data period (NASA POWER, 1984–2025) an
 
 | Element | Meaning |
 | --- | --- |
-| Blue bars | The measure for each season |
+| Blue bars | The measure for each season. Horizontal axis: "Winter (Nov–Feb, labelled by its January year)" or "Year" |
 | Black dashed line | Sen's slope trend line; the legend gives the slope per decade and p-value |
 | Solid blue line | 10-year centred average of the bars |
 | Grey shaded block | The baseline period, 1984–2013 |
@@ -252,6 +252,7 @@ A line under the heading names what is mapped, for example "Change in total Dunk
 | Key: colour scale | Blue to red, labelled "Fewer", "No change" and "More", with the end values and units (for example days per decade) |
 | Key: ★ | Significant trend after false discovery rate (FDR) correction |
 | Key: black dot | City, for orientation |
+| Axes | Longitude (°E) and Latitude (°N) |
 | Coloured square | One grid location cell (1° × 1°). Colour = Sen's slope per decade of the measure there |
 | ★ on a square | That cell's trend is significant after FDR correction |
 | City dot and name | Hamburg, Berlin, Cologne, Munich, for orientation only |
@@ -292,7 +293,7 @@ The note under the table explains that sunlight and cloud come from two satellit
 
 | Element | Meaning |
 | --- | --- |
-| Bubble chart | Every event in the chosen season type. Horizontal position = start date, height = length in days, size = severity |
+| Bubble chart | Every event in the chosen season type. Horizontal axis "Year (event start date)"; vertical axis "Dunkelflaute event length (days)"; bubble size = severity |
 | Event selector | Choose one of the 25 most severe events |
 | Detail chart: black line | Daily combined output (CF) from 10 days before to 10 days after the event |
 | Detail chart: dotted line | The threshold *T* |
