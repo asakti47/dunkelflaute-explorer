@@ -106,7 +106,7 @@ def place_name(lat: float, lon: float) -> str:
 SRC = {
     "power": "https://power.larc.nasa.gov/docs/methodology/data/sources/",
     "merra2": "https://doi.org/10.5067/VJAFPLI1CSIV",
-    "srb": "https://asdc.larc.nasa.gov/project/SRB/GEWEXSRB_Rel4-IP_Shortwave_daily_utc_1",
+    "srb": "https://doi.org/10.5067/GEWEXSRB/Rel4-IP_Shortwave_daily_utc_1",
     "ceres": "https://ceres.larc.nasa.gov/data/#syn1deg-level-3",
     "nao": "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii",
 }
