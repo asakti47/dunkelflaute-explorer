@@ -115,12 +115,13 @@ def sig_tag(t: dict) -> str:
     return f'<span class="dfx-tag {cls}">significant</span>'
 
 
-def card(label: str, value: str, sub: str, hover: str | None = None, small: bool = False) -> str:
+def card(label: str, value: str, sub: str, hover: str | None = None, small: bool = False, avg: str | None = None) -> str:
     tip = f'<div class="dfx-tip">{hover}</div>' if hover else ""
     cls = "dfx-card dfx-hover" if hover else "dfx-card"
     vcls = "dfx-value dfx-sm" if small else "dfx-value"
     return (f'<div class="{cls}"><div class="dfx-label">{label}</div>'
-            f'<div class="{vcls}">{value}</div><div class="dfx-sub">{sub}</div>{tip}</div>')
+            f'<div class="{vcls}">{value}</div>' + (f'<div class="dfx-avg">{avg}</div>' if avg else "")
+            + f'<div class="dfx-sub">{sub}</div>{tip}</div>')
 
 
 CARD_CSS = f"""
@@ -134,7 +135,9 @@ CARD_CSS = f"""
 .dfx-value.dfx-sm {{font-size: clamp(1.2rem, 1.75vw, 1.6rem); padding-top: 0.25rem;}}
 .dfx-unit {{font-size: 0.95rem; opacity: 0.75; white-space: nowrap;}}
 .dfx-nw {{white-space: nowrap;}}
+.dfx-unit-line {{display: block; white-space: normal; line-height: 1.3; margin-top: 0.1rem;}}
 .dfx-zero {{opacity: 0.55; font-weight: 600;}}
+.dfx-avg {{font-size: 0.8rem; line-height: 1.35; opacity: 0.65; margin: -0.15rem 0 0.4rem 0;}}
 .dfx-sub {{font-size: 0.82rem; line-height: 1.5; opacity: 0.9;}}
 .dfx-tag {{display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; font-weight: 600; font-size: 0.78rem;}}
 .dfx-ns {{background: rgba(138,138,138,0.18); color: inherit;}}
@@ -210,12 +213,16 @@ with tab_dash:
     # ---------------- verdict cards
     c1, c2, c3, c4 = st.columns(4)
     tag = season_tag(season)
-    c1.markdown(card(f"<b>Dunkelflaute frequency</b> · events per {tag}",
-                     f"{fmt_s(t_count['slope_decade'])} <span class='dfx-unit'>events / decade</span>",
-                     f"{sig_tag(t_count)} <span class='dfx-nw'>· {fmt_p(t_count['p_mk_mod'])}</span>"), unsafe_allow_html=True)
-    c2.markdown(card(f"<b>Dunkelflaute event length</b> · average days per event, each {tag}",
-                     f"{fmt_s(t_len['slope_decade'])} <span class='dfx-unit'>days / decade</span>",
-                     f"{sig_tag(t_len)} <span class='dfx-nw'>· {fmt_p(t_len['p_mk_mod'])}</span>"), unsafe_allow_html=True)
+    per = "winter" if season == "winter" else "year"
+    span = f"{int(m.index.min())}–{int(m.index.max())}"
+    c1.markdown(card(f"<b>Change in Dunkelflaute frequency</b> · events per {tag}",
+                     f"{fmt_s(t_count['slope_decade'])} <span class='dfx-unit dfx-unit-line'>events per {per}, per decade</span>",
+                     f"{sig_tag(t_count)} <span class='dfx-nw'>· {fmt_p(t_count['p_mk_mod'])}</span>",
+                     avg=f"Average: {m['count'].mean():.1f} events per {per}, {span}"), unsafe_allow_html=True)
+    c2.markdown(card(f"<b>Change in Dunkelflaute event length</b> · average days per event, each {tag}",
+                     f"{fmt_s(t_len['slope_decade'])} <span class='dfx-unit dfx-unit-line'>days per event, per decade</span>",
+                     f"{sig_tag(t_len)} <span class='dfx-nw'>· {fmt_p(t_len['p_mk_mod'])}</span>",
+                     avg=f"Average: {m['mean_len'].mean():.1f} days per event, {span}"), unsafe_allow_html=True)
     cells = run_cells(key(d), metric)
     sig_cells = cells[cells["significant_fdr"]].sort_values("slope_decade")
     up = int((sig_cells["slope_decade"] > 0).sum())
