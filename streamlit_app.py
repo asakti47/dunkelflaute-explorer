@@ -168,7 +168,6 @@ def card(title: str, value: str, units: str = "", context: str = "", tag: str = 
 
 CARD_CSS = f"""
 <style>
-[role="tab"][aria-selected="true"] p {{font-weight: 700;}}
 .dfx-cards {{display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1.5rem; row-gap: 0.75rem;
   margin: 0.3rem 0 1rem 0;}}
 @media (max-width: 1100px) {{ .dfx-cards {{grid-template-columns: repeat(2, minmax(0, 1fr));}} }}
@@ -270,10 +269,12 @@ pc = stats.period_compare(y)
 st.html(CARD_CSS)  # page-wide styles; placed in the main area so they load even when the sidebar is collapsed
 st.title("Dunkelflaute Explorer")
 st.markdown(f"**Is the 'dark doldrums' — long spells with little wind *and* little sun — getting more frequent or longer over {config.REGION_NAME}, and why?**  \n"
-            f"**Data:** NASA POWER, 1984–2025 · **Baseline:** {config.BASELINE[0]}–{config.BASELINE[1]}, which sets the low-output "
-            "cut-off and the 'before' period in comparisons")
+            f"**Baseline:** {config.BASELINE[0]}–{config.BASELINE[1]}, which sets the low-output cut-off and the 'before' period in comparisons  \n"
+            "Methodology, data sources and usage, assumptions and limitations, and the full code are on "
+            "[GitHub](https://github.com/asakti47/dunkelflaute-explorer#readme).")
 
-tab_dash, tab_defs, tab_method = st.tabs(["Dashboard", "Definitions", "Method & Data"])
+st.divider()
+tab_dash = st.container()
 
 with tab_dash:
     # ---------------- verdict cards
@@ -476,39 +477,3 @@ or <b>removed from</b> (bar to the left) {mname_w}, in {unit} per decade.<br><b>
         f"For {METRIC_LABELS[metric].lower()}, the recent period averages {pc['recent_mean']:.2f} versus {pc['baseline_mean']:.2f} in {base[0]}–{base[1]}. "
         f"{up} of {len(cells)} grid cells show a significant rise and {down} a significant fall."
     )
-
-with tab_defs:
-    st.header("Plain-language definitions")
-    st.markdown("""
-| Term | What it means |
-|---|---|
-| **Dunkelflaute** | A spell of at least 2 days when combined wind and solar output stays very low. |
-| **Capacity factor (CF)** | Power produced as a share of the maximum possible. 0.30 means 30% of full power. |
-| **Fixed fleet** | We use the same turbine and panel for every year, so changes come from the weather, not from new technology. |
-| **Baseline** | 1984–2013, the 30-year reference period used to set the 'low output' threshold. |
-| **Trend** | A steady rise or fall over the years, measured per decade. |
-| **Mann-Kendall test** | Checks whether values keep going up (or down) more often than chance would produce. |
-| **Sen's slope** | A robust estimate of how fast something changes: the middle of all the year-to-year slopes. |
-| **p-value** | The chance of seeing a trend this strong if there were really no trend. Below 0.05 = 'significant'. |
-| **False-discovery-rate (FDR)** | A correction so that testing many map cells at once doesn't flag some by luck. |
-| **Bootstrap range** | We reshuffle the years 1,000 times to see how much a result could vary; the middle 95% is the range. |
-| **NAO** | North Atlantic Oscillation, a see-saw in air pressure that steers Europe's winter winds. |
-| **Wind at 100 m** | Turbine hub height. NASA gives wind at 50 m; we scale it up with a standard formula. |
-""")
-
-with tab_method:
-    st.header("Method and data")
-    st.markdown(f"""
-- **Data:** NASA POWER daily point data, 1984–2025, on a 1° grid ({len(load_panel().points)} points) over {config.REGION_NAME}.
-  Wind and temperature come from NASA's **MERRA-2** reanalysis; sunlight and cloud from NASA **CERES SYN1deg** and **GEWEX SRB**.
-- **Wind power:** 50 m wind scaled to hub height (power law, α = 1/7), passed through a generic turbine power curve, averaged over an
-  assumed hour-to-hour spread within each day (sd = {config.INTRADAY_CV:.0%} of the daily mean).
-- **Solar power:** daily irradiance ÷ 24 h at 1 kW/m² rating × performance ratio {config.PV_PERFORMANCE_RATIO}.
-- **Events:** regional (area-mean) combined CF below the {config.DEFAULT.threshold_pct:g}th percentile of baseline days for ≥ {config.DEFAULT.min_days} days.
-- **Statistics:** Mann-Kendall with Hamed-Rao autocorrelation correction; Sen's slope with 95% CI; Mann-Whitney recent vs baseline;
-  Poisson regression on counts; Pettitt change-point; Benjamini-Hochberg FDR across cells.
-- **Attribution:** counterfactual runs with each direct driver's long-term trend removed (same threshold); moving-block bootstrap
-  (5-year blocks, 1,000 resamples, paired, re-estimating the driver's trend each time) for 95% ranges; Holm correction across drivers. Indirect drivers: trend × detrended sensitivity.
-- **Limitations:** daily data smooths hour-to-hour swings; a single reanalysis; a fixed hypothetical fleet rather than the real one.
-""")
-    st.markdown("Code: [github.com/asakti47/dunkelflaute-explorer](https://github.com/asakti47/dunkelflaute-explorer)")
