@@ -115,11 +115,13 @@ def sig_tag(t: dict) -> str:
     return f'<span class="dfx-tag {cls}">significant</span>'
 
 
-def card(label: str, value: str, units: str = "", context: str = "", tag: str = "", hover: str | None = None) -> str:
-    """One headline card: five rows (label, value, units, context, tag) that line up across all cards."""
+def card(title: str, value: str, units: str = "", context: str = "", tag: str = "", hover: str | None = None,
+         desc: str = "") -> str:
+    """One headline card: six rows (title, description, value, units, context, tag) that line up across all cards."""
     tip = f'<div class="dfx-tip">{hover}</div>' if hover else ""
     cls = "dfx-card dfx-hover" if hover else "dfx-card"
-    return (f'<div class="{cls}"><div class="dfx-label">{label}</div><div class="dfx-value">{value}</div>'
+    return (f'<div class="{cls}"><div class="dfx-title">{title}</div><div class="dfx-desc">{desc}</div>'
+            f'<div class="dfx-value">{value}</div>'
             f'<div class="dfx-units">{units}</div><div class="dfx-ctx">{context}</div><div class="dfx-sub">{tag}</div>{tip}</div>')
 
 
@@ -129,15 +131,14 @@ CARD_CSS = f"""
 .dfx-cards {{display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 1.5rem; row-gap: 0.75rem;
   margin: 0.3rem 0 1rem 0;}}
 @media (max-width: 1100px) {{ .dfx-cards {{grid-template-columns: repeat(2, minmax(0, 1fr));}} }}
-.dfx-card {{position: relative; display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; align-content: start;}}
-.dfx-label {{font-size: 0.875rem; line-height: 1.35; opacity: 0.85; padding-bottom: 0.3rem; align-self: end;}}
-.dfx-label b {{opacity: 1;}}
+.dfx-card {{position: relative; display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 0; align-content: start;}}
+.dfx-title {{font-size: 0.875rem; line-height: 1.35; font-weight: 700; align-self: start;}}
+.dfx-desc {{font-size: 0.875rem; line-height: 1.35; opacity: 0.85; padding: 0.1rem 0 0.3rem 0; align-self: start;}}
 .dfx-value {{font-size: clamp(1.25rem, 1.8vw, 1.7rem); line-height: 1.2; font-weight: 400;}}
 .dfx-units {{font-size: 0.9rem; line-height: 1.3; opacity: 0.75; padding-top: 0.1rem;}}
 .dfx-ctx {{font-size: 0.8rem; line-height: 1.35; opacity: 0.65; padding-top: 0.2rem;}}
 .dfx-sub {{font-size: 0.82rem; line-height: 1.5; padding-top: 0.35rem;}}
 .dfx-hover {{cursor: help;}}
-.dfx-label b {{opacity: 1;}}
 .dfx-nw {{white-space: nowrap;}}
 .dfx-zero {{opacity: 0.55; font-weight: 600;}}
 .dfx-tag {{display: inline-block; padding: 0.05rem 0.55rem; border-radius: 999px; font-weight: 600; font-size: 0.78rem;}}
@@ -216,12 +217,13 @@ with tab_dash:
     per = "winter" if season == "winter" else "year"
     span = f"<span class='dfx-nw'>{int(m.index.min())}–{int(m.index.max())}</span>"
     cards = [
-        card(f"<b>Change in Dunkelflaute frequency</b> · events per {tag}", fmt_s(t_count["slope_decade"]),
+        card("Change in Dunkelflaute frequency", fmt_s(t_count["slope_decade"]),
              f"events per {per}, per decade", f"Average: {m['count'].mean():.1f} events per {per}, {span}",
-             f"{sig_tag(t_count)} <span class='dfx-nw'>· {fmt_p(t_count['p_mk_mod'])}</span>"),
-        card(f"<b>Change in Dunkelflaute event length</b> · average days per event, each {tag}", fmt_s(t_len["slope_decade"]),
+             f"{sig_tag(t_count)} <span class='dfx-nw'>· {fmt_p(t_count['p_mk_mod'])}</span>", desc=f"events per {tag}"),
+        card("Change in Dunkelflaute event length", fmt_s(t_len["slope_decade"]),
              "days per event, per decade", f"Average: {m['mean_len'].mean():.1f} days per event, {span}",
-             f"{sig_tag(t_len)} <span class='dfx-nw'>· {fmt_p(t_len['p_mk_mod'])}</span>"),
+             f"{sig_tag(t_len)} <span class='dfx-nw'>· {fmt_p(t_len['p_mk_mod'])}</span>",
+             desc=f"average days per event, each {tag}"),
     ]
     cells = run_cells(key(d), metric)
     sig_cells = cells[cells["significant_fdr"]].sort_values("slope_decade")
@@ -240,7 +242,7 @@ with tab_dash:
         body = "<div style='margin:0.35rem 0'>No location has a significant trend.</div>"
     hover = (f"<b>Significant trends in {measure[0].lower() + measure[1:]}, {season_word}</b>{body}"
              "<div class='dfx-foot'>FDR = false discovery rate: a correction for testing 80 locations at once.</div>")
-    cards.append(card("<b>Locations with a significant trend</b>",
+    cards.append(card("Locations with a significant trend",
                       f'<span class="dfx-nw {"dfx-rise" if up else "dfx-zero"}">{up} rising</span> · '
                       f'<span class="dfx-nw {"dfx-fall" if down else "dfx-zero"}">{down} falling</span>',
                       f"of {len(cells)} grid location cells (after FDR)", "Hover for locations", hover=hover))
@@ -249,10 +251,10 @@ with tab_dash:
     if len(sig):
         short = {"wind_hub": "Wind", "ghi": "Sun"}
         parts = [f'<span class="dfx-nw">{short[k]} {fmt_s(r.reduction_decade, 1)}</span>' for k, r in sig.iterrows()]
-        cards.append(card("<b>Driver effects (significant)</b>", " · ".join(parts),
+        cards.append(card("Driver effects (significant)", " · ".join(parts),
                           f"{measure[0].lower() + measure[1:]} per decade"))
     else:
-        cards.append(card("<b>Driver effects</b>", "None", "wind & sun trends: no significant effect"))
+        cards.append(card("Driver effects", "None", "wind & sun trends: no significant effect"))
     st.markdown(f'<div class="dfx-cards">{"".join(cards)}</div>', unsafe_allow_html=True)
 
     # ---------------- time series
