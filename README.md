@@ -213,15 +213,6 @@ The lines under the page title give the baseline (1984–2013), which sets the l
 
 **Season tag.** The purple tag (winter or year) in the first two card labels shows the current **Season** setting. The same tag appears under the Season control in the sidebar, and all copies change together.
 
-**Colours.**
-
-| Colour | Where | Meaning |
-| --- | --- | --- |
-| Grey tag | Cards 1–2 | Not significant |
-| Red | Cards 1–2 tag; card 3 "rising" | Significant and rising: more or longer Dunkelflaute |
-| Blue | Cards 1–2 tag; card 3 "falling" | Significant and falling |
-| Faded grey | Card 3 | A count of zero |
-
 **Hover on card 3.** Hovering over the card lists each significant location: the nearest reference city ("near *city*" within 40 km, otherwise the distance to it), the cell's centre coordinates, and its change per decade in the chosen measure. At default settings: winter, 50 km from Hanover (52.5°N, 9.0°E), −0.40 days per decade; full year, near Saarbrücken (49.5°N, 7.0°E), −2.22, and near Aachen (50.5°N, 6.0°E), −2.11. A footnote explains FDR: a correction for testing 80 locations at once.
 
 ### Time series
